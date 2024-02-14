@@ -1,25 +1,29 @@
 ﻿using System.Diagnostics;
+using System.Text.Json;
 
 namespace VideoStuff {
     internal class Program {
 
-        public static FileInfo? InFile { get; set; }
+        public static Video InVideo { get; set; }
 
         public static FileInfo FFMpeg { get; set; } = new(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ffmpeg.exe"));
+        public static FileInfo FFProbe { get; set; } = new(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ffprobe.exe"));
 
         static readonly List<string> FFArgsList = [];
         static string FFArgs => String.Join(" ", FFArgsList);
 
-        static string? suffix;
-
         static void Main(string[] args) {
-            if (!File.Exists(args.FirstOrDefault()) || !FFMpeg.Exists) 
+            if (!File.Exists(args.FirstOrDefault()) || !FFMpeg.Exists) {
+                Console.WriteLine("Invalid File");
+                Console.Write("Press Enter to Exit...");
+                Console.ReadLine();
                 return;
+            }
 
-            InFile = new(args.FirstOrDefault()!);
+            RunProbe(args.FirstOrDefault()!);
 
-            Console.WriteLine(InFile.Name);
-            FFArgsList.Add($"-i \"{InFile.FullName}\"");
+            Console.WriteLine(InVideo.Name);
+            FFArgsList.Add($"-i \"{InVideo.FullPath}\"");
 
             WriteSeparator();
 
@@ -42,16 +46,18 @@ namespace VideoStuff {
         public static void Remux() {
             ConsoleKey map = PromptUserKey("Map All Audio Tracks (Y/N) [N]: ");
 
-            suffix = ".remux";
+            InVideo.Suffix = ".remux";
 
             FFArgsList.Add("-c copy");
             if (map == ConsoleKey.Y) {
                 FFArgsList.Add("-map 0");
-                suffix += "Mapped";
+                InVideo.Suffix += "Mapped";
             }
         }
 
         public static void Convert() {
+            FFArgsList.Add("-vcodec libx264 -acodec aac -ac 2");
+
             ConsoleKey cut = PromptUserKey("Cut Video? (Y/N) [N]: ");
             if (cut == ConsoleKey.Y) {
                 string startTime = PromptUser("Start Time: ");
@@ -63,20 +69,33 @@ namespace VideoStuff {
                 if (!String.IsNullOrEmpty(endTime))
                     FFArgsList.Add($"-to {endTime}");
 
-                suffix = ".cut";
+                InVideo.Suffix = ".cut";
             }
-            else
-                suffix = ".conv";
+            else InVideo.Suffix = ".conv";
         }
 
         public static void RunFFMpeg() {
-            FFArgsList.Add("\"" + Path.Combine(Path.GetDirectoryName(InFile!.FullName)!, Path.GetFileNameWithoutExtension(InFile!.Name) + suffix + ".mp4") + "\"");
+            FFArgsList.Add(InVideo.OutPathQuoted);
             /*new Process() { 
                 StartInfo = new ProcessStartInfo() {
                     FileName = FFMpeg.FullName,
                     Arguments = FFArgs
                 }
             }.Start();*/
+        }
+
+        public static void RunProbe(string path) {
+            Process probe = new() {
+                StartInfo = new ProcessStartInfo() {
+                    FileName = FFProbe.FullName,
+                    Arguments = $"-v quiet -print_format json -show_format -show_streams \"{path}\"",
+                    RedirectStandardOutput = true,
+                }
+            };
+
+            probe.Start();
+            string output = probe.StandardOutput.ReadToEnd();
+            InVideo = new(JsonDocument.Parse(output).RootElement);
         }
 
         public static ConsoleKey PromptUserKey(string message) {
