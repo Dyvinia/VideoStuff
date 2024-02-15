@@ -40,15 +40,15 @@ namespace VideoStuff {
 
             RunFFMpeg();
 
-            WriteSeparator();
-
             if (Errored) {
+                WriteSeparator();
                 Console.Write("Press Enter to Exit...");
                 Console.ReadLine();
             }
         }
 
         private static void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e) {
+            WriteSeparator();
             Console.WriteLine(e.ExceptionObject.ToString());
             Console.Write("Press Enter to Exit...");
             Console.ReadLine();
