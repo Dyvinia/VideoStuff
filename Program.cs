@@ -22,6 +22,8 @@ namespace VideoStuff {
             else
                 inFilePath = PromptUser("Input Video File: ").Trim('\"');
 
+            Console.Clear();
+
             if (!File.Exists(inFilePath)) {
                 Console.WriteLine("Invalid File");
                 Console.Write("Press Enter to Exit...");
