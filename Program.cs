@@ -11,11 +11,24 @@ namespace VideoStuff {
 
         static readonly List<string> FFArgsList = [];
         static string FFArgs => String.Join(" ", FFArgsList);
+
         static bool Errored = false;
 
         static void Main(string[] args) {
-            if (!File.Exists(args.FirstOrDefault()) || !FFMpeg.Exists) {
+            if (!File.Exists(args.FirstOrDefault())) {
                 Console.WriteLine("Invalid File");
+                Console.Write("Press Enter to Exit...");
+                Console.ReadLine();
+                return;
+            }
+            else if (!FFMpeg.Exists) {
+                Console.WriteLine("Unable to Locate FFMpeg");
+                Console.Write("Press Enter to Exit...");
+                Console.ReadLine();
+                return;
+            }
+            else if (!FFProbe.Exists) {
+                Console.WriteLine("Unable to Locate FFProbe");
                 Console.Write("Press Enter to Exit...");
                 Console.ReadLine();
                 return;
