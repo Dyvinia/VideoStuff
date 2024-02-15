@@ -82,19 +82,40 @@ namespace VideoStuff {
 
         public static void RunFFMpeg() {
             FFArgsList.Add(InVideo.OutPathQuoted);
-            Process ffmpeg = new Process() { 
-                StartInfo = new ProcessStartInfo() {
+            Process ffmpeg = new() { 
+                StartInfo = new() {
                     FileName = FFMpeg.FullName,
-                    Arguments = FFArgs
+                    Arguments = FFArgs,
+                    RedirectStandardError = true,
                 }
             };
             ffmpeg.Start();
+
+            string line = "";
+            while (!ffmpeg.StandardError.EndOfStream) {
+                char character = (char)ffmpeg.StandardError.Read();
+                line += character;
+                Console.Write(character);
+                if (character == '\n')
+                    line = "";
+                if (character == '\r') {
+                    if (line.Contains("frame=")) {
+                        string lineCutFront = line[(line.IndexOf('=') + 1)..];
+                        string linefinal = lineCutFront[..lineCutFront.IndexOf('f')];
+                        if (int.TryParse(linefinal, out int currentFrame)) {
+                            double percent = currentFrame * 100 / InVideo.TotalFrames;
+                            Console.Write($"\r{percent}% ");
+                        }
+                    }
+                    line = "";
+                }
+            }
             ffmpeg.WaitForExit();
         }
 
         public static void RunProbe(string path) {
             Process probe = new() {
-                StartInfo = new ProcessStartInfo() {
+                StartInfo = new() {
                     FileName = FFProbe.FullName,
                     Arguments = $"-v quiet -print_format json -show_format -show_streams \"{path}\"",
                     RedirectStandardOutput = true,

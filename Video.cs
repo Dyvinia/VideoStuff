@@ -16,6 +16,8 @@ namespace VideoStuff {
         public int FPS { get; private set; }
         public double Duration { get; private set; }
 
+        public int TotalFrames => (int)(Duration * FPS);
+
         public Video(JsonElement rootElement) {
             FullPath = rootElement.GetProperty("format").GetProperty("filename").GetString() ?? String.Empty;
 
