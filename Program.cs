@@ -48,6 +48,12 @@ namespace VideoStuff {
             RunProbe(inFilePath);
 
             Console.WriteLine(InVideo.Name);
+
+            int durMin = (int)TimeSpan.FromSeconds(InVideo.Duration).TotalMinutes;
+            int durSec = TimeSpan.FromSeconds(InVideo.Duration).Seconds;
+            int durMicro = TimeSpan.FromSeconds(InVideo.Duration).Milliseconds;
+
+            Console.WriteLine($"Length: {(durMin > 0 ? $"{durMin}:{durSec}.{durMicro}" : InVideo.Duration.ToString("N3"))} | FPS: {InVideo.FPS}");
             FFArgsList.Add($"-i \"{InVideo.FullPath}\"");
 
             WriteSeparator();
