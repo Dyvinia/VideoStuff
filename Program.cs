@@ -58,6 +58,12 @@ namespace VideoStuff {
         public static void Convert() {
             FFArgsList.Add("-vcodec libx264 -acodec aac -ac 2");
 
+            ConsoleKey maxSize = PromptUserKey("Prevent Filesize from Exceeding 50MB? (Y/N) [Y]: ");
+            if (maxSize != ConsoleKey.N) {
+                int totalRate = 400000000 / (int)Math.Ceiling(InVideo.Duration);
+                FFArgsList.Add($"-maxrate {totalRate} -bufsize {totalRate}");
+            }
+
             ConsoleKey cut = PromptUserKey("Cut Video? (Y/N) [N]: ");
             if (cut == ConsoleKey.Y) {
                 string startTime = PromptUser("Start Time: ");
@@ -76,12 +82,14 @@ namespace VideoStuff {
 
         public static void RunFFMpeg() {
             FFArgsList.Add(InVideo.OutPathQuoted);
-            /*new Process() { 
+            Process ffmpeg = new Process() { 
                 StartInfo = new ProcessStartInfo() {
                     FileName = FFMpeg.FullName,
                     Arguments = FFArgs
                 }
-            }.Start();*/
+            };
+            ffmpeg.Start();
+            ffmpeg.WaitForExit();
         }
 
         public static void RunProbe(string path) {
