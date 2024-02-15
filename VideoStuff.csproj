@@ -5,6 +5,11 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+
+    <AssemblyName>VideoStuff</AssemblyName>
+    <Version>1.0.0</Version>
+    <Copyright>Copyright © 2024 Dyvinia</Copyright>
+    <Company>Dyvinia</Company>
   </PropertyGroup>
 
 </Project>
