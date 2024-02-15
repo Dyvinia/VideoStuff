@@ -186,7 +186,7 @@ namespace VideoStuff {
         }
 
         private static double ParseSeconds(string value) {
-            return TimeSpan.ParseExact(value, [@"h\:m\:s\.f", @"m\:s\.f", @"m\:s", @"%s", @"s\.f"], CultureInfo.InvariantCulture).TotalSeconds;
+            return TimeSpan.ParseExact(value, [@"h\:m\:s\.FFFF", @"m\:s\.FFFF", @"m\:s", @"%s", @"s\.FFFF"], CultureInfo.InvariantCulture).TotalSeconds;
         }
 
         public static ConsoleKey PromptUserKey(string message) {
