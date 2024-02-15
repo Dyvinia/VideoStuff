@@ -11,6 +11,7 @@ namespace VideoStuff {
 
         static readonly List<string> FFArgsList = [];
         static string FFArgs => String.Join(" ", FFArgsList);
+        static bool Errored = false;
 
         static void Main(string[] args) {
             if (!File.Exists(args.FirstOrDefault()) || !FFMpeg.Exists) {
@@ -19,6 +20,8 @@ namespace VideoStuff {
                 Console.ReadLine();
                 return;
             }
+
+            AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
 
             RunProbe(args.FirstOrDefault()!);
 
@@ -39,8 +42,17 @@ namespace VideoStuff {
 
             WriteSeparator();
 
+            if (Errored) {
+                Console.Write("Press Enter to Exit...");
+                Console.ReadLine();
+            }
+        }
+
+        private static void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e) {
+            Console.WriteLine(e.ExceptionObject.ToString());
             Console.Write("Press Enter to Exit...");
             Console.ReadLine();
+            Environment.Exit(1);
         }
 
         public static void Remux() {
@@ -128,6 +140,8 @@ namespace VideoStuff {
                     }
                     line = "";
                 }
+                if (line.Contains("Error opening output file")) 
+                    Errored = true;
             }
             ffmpeg.WaitForExit();
         }
