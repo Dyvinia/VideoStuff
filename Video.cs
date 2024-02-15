@@ -35,7 +35,7 @@ namespace VideoStuff {
             FPS = int.Parse(videoStream!.Value.GetProperty("r_frame_rate").GetString()!.Split('/').First());
 
             if (videoStream!.Value.TryGetProperty("duration", out JsonElement durationElement))
-                Duration = double.Parse(durationElement.GetString()!.TrimEnd('0').TrimEnd('.'));
+                Duration = ParseSeconds(durationElement.GetString()!.TrimEnd('0').TrimEnd('.'));
             else if (videoStream!.Value.GetProperty("tags").TryGetProperty("DURATION", out JsonElement durationTagElement))
                 Duration = ParseSeconds(durationTagElement.GetString()!.TrimEnd('0').TrimEnd('.'));
 
@@ -43,7 +43,9 @@ namespace VideoStuff {
         }
 
         public static double ParseSeconds(string value) {
-            return TimeSpan.ParseExact(value, [@"h\:m\:s\.FFFF", @"m\:s\.FFFF", @"m\:s", @"%s", @"s\.FFFFFFF"], CultureInfo.InvariantCulture).TotalSeconds;
+            if (value.Contains(':'))
+                return TimeSpan.ParseExact(value, [@"h\:m\:s\.FFFF", @"m\:s\.FFFF", @"m\:s"], CultureInfo.InvariantCulture).TotalSeconds;
+            else return double.Parse(value);
         }
     }
 }
