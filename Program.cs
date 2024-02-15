@@ -129,9 +129,13 @@ namespace VideoStuff {
                 }
             }
 
-            ConsoleKey maxSize = PromptUserKey("Prevent Filesize from Exceeding 50MB? (Y/N) [Y]: ");
+            ConsoleKey maxSize = PromptUserKey("Prevent Filesize from Exceeding 50MB? (Y/H(alf)/N) [Y]: ");
             if (maxSize != ConsoleKey.N) {
                 int totalRate = 400000000 / (int)Math.Ceiling(InVideo.Duration);
+                FFArgsList.Add($"-maxrate {totalRate} -bufsize {totalRate}");
+            }
+            else if (maxSize != ConsoleKey.H) {
+                int totalRate = 200000000 / (int)Math.Ceiling(InVideo.Duration);
                 FFArgsList.Add($"-maxrate {totalRate} -bufsize {totalRate}");
             }
         }
