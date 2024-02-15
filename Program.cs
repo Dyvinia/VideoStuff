@@ -53,7 +53,7 @@ namespace VideoStuff {
             ConsoleKey remuxOrConv = PromptUserKey("Remux (R) or Convert (C)? [C]: ");
             if (remuxOrConv == ConsoleKey.R)
                 Remux();
-            else if (remuxOrConv == ConsoleKey.C || remuxOrConv == ConsoleKey.Enter)
+            else
                 Convert();
 
             Console.WriteLine($"ffmpeg {FFArgs}");
