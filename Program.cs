@@ -33,9 +33,9 @@ namespace VideoStuff {
             else if (remuxOrConv == ConsoleKey.C || remuxOrConv == ConsoleKey.Enter)
                 Convert();
 
-            RunFFMpeg();
+            Console.WriteLine($"ffmpeg {FFArgs}");
 
-            Console.WriteLine(FFArgs);
+            RunFFMpeg();
 
             WriteSeparator();
 
@@ -57,6 +57,7 @@ namespace VideoStuff {
 
         public static void Convert() {
             FFArgsList.Add("-vcodec libx264 -acodec aac -ac 2");
+            InVideo.Suffix = ".conv";
 
             ConsoleKey maxSize = PromptUserKey("Prevent Filesize from Exceeding 50MB? (Y/N) [Y]: ");
             if (maxSize != ConsoleKey.N) {
@@ -77,7 +78,25 @@ namespace VideoStuff {
 
                 InVideo.Suffix = ".cut";
             }
-            else InVideo.Suffix = ".conv";
+            else {
+                ConsoleKey speed = PromptUserKey("Change Speed Of Video? (Y/N) [N]: ");
+                if (speed == ConsoleKey.Y) {
+                    string mult = PromptUser("Speed: ");
+                    if (String.IsNullOrEmpty(mult))
+                        mult = "1";
+
+                    string fps = PromptUser("FPS [Speed*FPS]: ");
+                    if (String.IsNullOrEmpty(fps))
+                        FFArgsList.Add($"-vf \"setpts=PTS/{mult},fps=source_fps*{mult}\" -af \"atempo={mult}\"");
+                    else {
+                        FFArgsList.Add($"-vf \"setpts=PTS/{mult},fps={fps}\" -af \"atempo={mult}\"");
+                        InVideo.Duration = InVideo.Duration / double.Parse(mult);
+                        InVideo.FPS = int.Parse(fps);
+                    }
+
+                    InVideo.Suffix = $".{mult}x";
+                }
+            }
         }
 
         public static void RunFFMpeg() {

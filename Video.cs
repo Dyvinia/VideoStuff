@@ -13,8 +13,8 @@ namespace VideoStuff {
         public string OutPath => Path.Combine(Path.GetDirectoryName(FullPath)!, Path.GetFileNameWithoutExtension(Name) + Suffix + ".mp4");
         public string OutPathQuoted => $"\"{OutPath}\"";
 
-        public int FPS { get; private set; }
-        public double Duration { get; private set; }
+        public int FPS { get; set; }
+        public double Duration { get; set; }
 
         public int TotalFrames => (int)(Duration * FPS);
 
