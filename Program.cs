@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Globalization;
 using System.Text.Json;
 
 namespace VideoStuff {
@@ -15,7 +16,13 @@ namespace VideoStuff {
         static bool Errored = false;
 
         static void Main(string[] args) {
-            if (!File.Exists(args.FirstOrDefault())) {
+            string inFilePath = String.Empty;
+            if (args.Length > 0)
+                inFilePath = args[0];
+            else
+                inFilePath = PromptUser("Input Video File: ").Trim('\"');
+
+            if (!File.Exists(inFilePath)) {
                 Console.WriteLine("Invalid File");
                 Console.Write("Press Enter to Exit...");
                 Console.ReadLine();
@@ -36,7 +43,7 @@ namespace VideoStuff {
 
             AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
 
-            RunProbe(args.FirstOrDefault()!);
+            RunProbe(inFilePath);
 
             Console.WriteLine(InVideo.Name);
             FFArgsList.Add($"-i \"{InVideo.FullPath}\"");
@@ -84,12 +91,6 @@ namespace VideoStuff {
             FFArgsList.Add("-vcodec libx264 -acodec aac -ac 2");
             InVideo.Suffix = ".conv";
 
-            ConsoleKey maxSize = PromptUserKey("Prevent Filesize from Exceeding 50MB? (Y/N) [Y]: ");
-            if (maxSize != ConsoleKey.N) {
-                int totalRate = 400000000 / (int)Math.Ceiling(InVideo.Duration);
-                FFArgsList.Add($"-maxrate {totalRate} -bufsize {totalRate}");
-            }
-
             ConsoleKey cut = PromptUserKey("Cut Video? (Y/N) [N]: ");
             if (cut == ConsoleKey.Y) {
                 string startTime = PromptUser("Start Time: ");
@@ -97,9 +98,14 @@ namespace VideoStuff {
                     startTime = "0";
                 FFArgsList.Add($"-ss {startTime}");
 
+                double newDur = InVideo.Duration - ParseSeconds(startTime);
+
                 string? endTime = PromptUser("End Time: ");
-                if (!String.IsNullOrEmpty(endTime))
+                if (!String.IsNullOrEmpty(endTime)) {
                     FFArgsList.Add($"-to {endTime}");
+                    newDur = ParseSeconds(endTime) - ParseSeconds(startTime);
+                }
+                InVideo.Duration = newDur;
 
                 InVideo.Suffix = ".cut";
             }
@@ -121,6 +127,12 @@ namespace VideoStuff {
 
                     InVideo.Suffix = $".{mult}x";
                 }
+            }
+
+            ConsoleKey maxSize = PromptUserKey("Prevent Filesize from Exceeding 50MB? (Y/N) [Y]: ");
+            if (maxSize != ConsoleKey.N) {
+                int totalRate = 400000000 / (int)Math.Ceiling(InVideo.Duration);
+                FFArgsList.Add($"-maxrate {totalRate} -bufsize {totalRate}");
             }
         }
 
@@ -171,6 +183,10 @@ namespace VideoStuff {
             probe.Start();
             string output = probe.StandardOutput.ReadToEnd();
             InVideo = new(JsonDocument.Parse(output).RootElement);
+        }
+
+        private static double ParseSeconds(string value) {
+            return TimeSpan.ParseExact(value, [@"h\:m\:s\.f", @"m\:s\.f", @"m\:s", @"%s", @"s\.f"], CultureInfo.InvariantCulture).TotalSeconds;
         }
 
         public static ConsoleKey PromptUserKey(string message) {

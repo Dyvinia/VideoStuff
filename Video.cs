@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using System.Globalization;
+using System.Text.Json;
 
 namespace VideoStuff {
     public class Video {
@@ -34,9 +35,15 @@ namespace VideoStuff {
             FPS = int.Parse(videoStream!.Value.GetProperty("r_frame_rate").GetString()!.Split('/').First());
 
             if (videoStream!.Value.TryGetProperty("duration", out JsonElement durationElement))
-                Duration = TimeSpan.Parse(durationElement.GetString()!.TrimEnd('0').TrimEnd('.')).TotalSeconds;
+                Duration = ParseSeconds(durationElement.GetString()!.TrimEnd('0').TrimEnd('.'));
             else if (videoStream!.Value.GetProperty("tags").TryGetProperty("DURATION", out JsonElement durationTagElement))
-                Duration = TimeSpan.Parse(durationTagElement.GetString()!.TrimEnd('0').TrimEnd('.')).TotalSeconds;
+                Duration = ParseSeconds(durationTagElement.GetString()!.TrimEnd('0').TrimEnd('.'));
+
+            
+        }
+
+        private double ParseSeconds(string value) {
+            return TimeSpan.ParseExact(value, [@"h\:m\:s\.f", @"m\:s\.f", @"m\:s", @"%s", @"s\.f"], CultureInfo.InvariantCulture).TotalSeconds;
         }
     }
 }
