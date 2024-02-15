@@ -98,12 +98,12 @@ namespace VideoStuff {
                     startTime = "0";
                 FFArgsList.Add($"-ss {startTime}");
 
-                double newDur = InVideo.Duration - ParseSeconds(startTime);
+                double newDur = InVideo.Duration - Video.ParseSeconds(startTime);
 
                 string? endTime = PromptUser("End Time: ");
                 if (!String.IsNullOrEmpty(endTime)) {
                     FFArgsList.Add($"-to {endTime}");
-                    newDur = ParseSeconds(endTime) - ParseSeconds(startTime);
+                    newDur = Video.ParseSeconds(endTime) - Video.ParseSeconds(startTime);
                 }
                 InVideo.Duration = newDur;
 
@@ -187,10 +187,6 @@ namespace VideoStuff {
             probe.Start();
             string output = probe.StandardOutput.ReadToEnd();
             InVideo = new(JsonDocument.Parse(output).RootElement);
-        }
-
-        private static double ParseSeconds(string value) {
-            return TimeSpan.ParseExact(value, [@"h\:m\:s\.FFFF", @"m\:s\.FFFF", @"m\:s", @"%s", @"s\.FFFF"], CultureInfo.InvariantCulture).TotalSeconds;
         }
 
         public static ConsoleKey PromptUserKey(string message) {
