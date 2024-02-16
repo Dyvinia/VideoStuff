@@ -9,7 +9,7 @@ namespace VideoStuff {
         public string Name => Path.GetFileName(FullPath);
         public string Extension => Path.GetExtension(FullPath);
 
-        public string? Suffix { get; set; }
+        public string? Suffix { get; set; } = String.Empty;
 
         public string OutPath => Path.Combine(Path.GetDirectoryName(FullPath)!, Path.GetFileNameWithoutExtension(Name) + Suffix + ".mp4");
         public string OutPathQuoted => $"\"{OutPath}\"";
@@ -38,8 +38,12 @@ namespace VideoStuff {
                 Duration = ParseSeconds(durationElement.GetString()!.TrimEnd('0').TrimEnd('.'));
             else if (videoStream!.Value.GetProperty("tags").TryGetProperty("DURATION", out JsonElement durationTagElement))
                 Duration = ParseSeconds(durationTagElement.GetString()!.TrimEnd('0').TrimEnd('.'));
+        }
 
-            
+        public Video(string seqPath, int fps, int frameCount) {
+            FullPath = seqPath;
+            FPS = fps;
+            Duration = (double)frameCount/fps;
         }
 
         public static double ParseSeconds(string value) {

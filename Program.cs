@@ -8,6 +8,9 @@ namespace VideoStuff {
     internal class Program {
         public static readonly string AppDataDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), Assembly.GetEntryAssembly()!.GetName().Name!);
 
+        public static readonly string[] VideoExt = [".mkv", ".mp4", ".webm", ".mov", ".avi", ".m4v"];
+        public static readonly string[] ImageSeqExt = [".png", ".jpg", ".jpeg", ".bmp"];
+
         public static Video InVideo { get; set; }
 
         public static FileInfo FFMpeg { get; set; } = new(Path.Combine(AppDataDir, "ffmpeg.exe"));
@@ -19,6 +22,8 @@ namespace VideoStuff {
         static bool Errored = false;
 
         static void Main(string[] args) {
+            AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
+
             Directory.CreateDirectory(AppDataDir);
             if (!FFMpeg.Exists || !FFProbe.Exists) {
                 DownloadFFMpeg().Wait();
@@ -29,41 +34,74 @@ namespace VideoStuff {
             if (args.Length > 0)
                 inFilePath = args[0];
             else
-                inFilePath = PromptUser("Input Video File: ").Trim('\"');
+                inFilePath = PromptUser("Input File: ").Trim('\"');
 
             Console.Clear();
 
-            if (!File.Exists(inFilePath)) {
-                Console.WriteLine("File does not exist");
+            if (VideoExt.Any(e => e == Path.GetExtension(inFilePath))) {
+                RunProbe(inFilePath);
+
+                Console.WriteLine(InVideo.Name);
+
+                int durMin = (int)TimeSpan.FromSeconds(InVideo.Duration).TotalMinutes;
+                int durSec = TimeSpan.FromSeconds(InVideo.Duration).Seconds;
+                int durMicro = TimeSpan.FromSeconds(InVideo.Duration).Milliseconds;
+
+                Console.WriteLine($"Length: {(durMin > 0 ? $"{durMin}:{durSec}.{durMicro}" : InVideo.Duration.ToString("N3"))} | FPS: {InVideo.FPS}");
+                FFArgsList.Add($"-i \"{InVideo.FullPath}\"");
+
+                WriteSeparator();
+
+                ConsoleKey remuxOrConv = PromptUserKey("Remux (R) or Convert (C)? [C]: ");
+                if (remuxOrConv == ConsoleKey.R)
+                    Remux();
+                else
+                    Convert();
+
+                Console.WriteLine($"ffmpeg {FFArgs}");
+
+                RunFFMpeg();
+            }
+            else if (ImageSeqExt.Any(e => e == Path.GetExtension(inFilePath))) {
+                Console.WriteLine($"Image Sequence: {inFilePath}");
+                
+                string startFrame = string.Concat(Path.GetFileNameWithoutExtension(inFilePath).Where(char.IsDigit));
+                int startFrameNumber = int.Parse(startFrame);
+
+                int frameCount = Directory.EnumerateFiles(Path.GetDirectoryName(inFilePath)!).Where(f => Path.GetFileNameWithoutExtension(f).Any(char.IsDigit)).Where(f => {
+                    int fNum = int.Parse(string.Concat(Path.GetFileNameWithoutExtension(f).Where(char.IsDigit)));
+                    return f.Contains(Path.GetFileNameWithoutExtension(inFilePath).Replace(startFrame, "")) && fNum > startFrameNumber;
+                }).Count();
+
+                Console.WriteLine($"Start Frame: {startFrameNumber} | Frame Count: {frameCount}");
+
+                WriteSeparator();
+
+                string inSequence = Path.Combine(Path.GetDirectoryName(inFilePath)!, Path.GetFileNameWithoutExtension(inFilePath).Replace(startFrame, "") + $"%0{startFrame.Length}d" + Path.GetExtension(inFilePath));
+
+                FFArgsList.Add($"-start_number {startFrameNumber}");
+
+                FFArgsList.Add($"-i \"{inSequence}\"");
+
+                FFArgsList.Add($"-vcodec libx264 -pix_fmt yuv420p");
+
+                string fps = PromptUser("Framerate [30]: ");
+                if (String.IsNullOrWhiteSpace(fps))
+                    fps = "30";
+
+                FFArgsList.Add($"-r {fps} -vf fps={fps}");
+
+                InVideo = new(inFilePath, int.Parse(fps), frameCount);
+
+                Console.WriteLine($"ffmpeg {FFArgs}");
+
+                RunFFMpeg();
+            }
+            else {
+                Console.WriteLine("File is not valid format");
                 Console.Write("Press Enter to Exit...");
                 Console.ReadLine();
-                return;
             }
-
-            AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
-
-            RunProbe(inFilePath);
-
-            Console.WriteLine(InVideo.Name);
-
-            int durMin = (int)TimeSpan.FromSeconds(InVideo.Duration).TotalMinutes;
-            int durSec = TimeSpan.FromSeconds(InVideo.Duration).Seconds;
-            int durMicro = TimeSpan.FromSeconds(InVideo.Duration).Milliseconds;
-
-            Console.WriteLine($"Length: {(durMin > 0 ? $"{durMin}:{durSec}.{durMicro}" : InVideo.Duration.ToString("N3"))} | FPS: {InVideo.FPS}");
-            FFArgsList.Add($"-i \"{InVideo.FullPath}\"");
-
-            WriteSeparator();
-
-            ConsoleKey remuxOrConv = PromptUserKey("Remux (R) or Convert (C)? [C]: ");
-            if (remuxOrConv == ConsoleKey.R)
-                Remux();
-            else
-                Convert();
-
-            Console.WriteLine($"ffmpeg {FFArgs}");
-
-            RunFFMpeg();
 
             if (Errored) {
                 WriteSeparator();
@@ -99,14 +137,14 @@ namespace VideoStuff {
             ConsoleKey cut = PromptUserKey("Cut Video? (Y/N) [N]: ");
             if (cut == ConsoleKey.Y) {
                 string startTime = PromptUser("Start Time: ");
-                if (String.IsNullOrEmpty(startTime)) 
+                if (String.IsNullOrWhiteSpace(startTime)) 
                     startTime = "0";
                 FFArgsList.Add($"-ss {startTime}");
 
                 double newDur = InVideo.Duration - Video.ParseSeconds(startTime);
 
                 string? endTime = PromptUser("End Time: ");
-                if (!String.IsNullOrEmpty(endTime)) {
+                if (!String.IsNullOrWhiteSpace(endTime)) {
                     FFArgsList.Add($"-to {endTime}");
                     newDur = Video.ParseSeconds(endTime) - Video.ParseSeconds(startTime);
                 }
@@ -118,11 +156,11 @@ namespace VideoStuff {
                 ConsoleKey speed = PromptUserKey("Change Speed Of Video? (Y/N) [N]: ");
                 if (speed == ConsoleKey.Y) {
                     string mult = PromptUser("Speed: ");
-                    if (String.IsNullOrEmpty(mult))
+                    if (String.IsNullOrWhiteSpace(mult))
                         mult = "1";
 
                     string fps = PromptUser("FPS [Speed*FPS]: ");
-                    if (String.IsNullOrEmpty(fps))
+                    if (String.IsNullOrWhiteSpace(fps))
                         FFArgsList.Add($"-vf \"setpts=PTS/{mult},fps=source_fps*{mult}\" -af \"atempo={mult}\"");
                     else {
                         FFArgsList.Add($"-vf \"setpts=PTS/{mult},fps={fps}\" -af \"atempo={mult}\"");
@@ -174,7 +212,7 @@ namespace VideoStuff {
                     }
                     line = "";
                 }
-                if (line.Contains("Error opening output file")) 
+                if (line.Contains("error", StringComparison.CurrentCultureIgnoreCase)) 
                     Errored = true;
             }
             ffmpeg.WaitForExit();
