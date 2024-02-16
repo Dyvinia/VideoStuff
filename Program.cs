@@ -1,14 +1,17 @@
 ﻿using System.Diagnostics;
-using System.Globalization;
+using System.IO.Compression;
+using System.Net;
+using System.Reflection;
 using System.Text.Json;
 
 namespace VideoStuff {
     internal class Program {
+        public static readonly string AppDataDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), Assembly.GetEntryAssembly()!.GetName().Name!);
 
         public static Video InVideo { get; set; }
 
-        public static FileInfo FFMpeg { get; set; } = new(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ffmpeg.exe"));
-        public static FileInfo FFProbe { get; set; } = new(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ffprobe.exe"));
+        public static FileInfo FFMpeg { get; set; } = new(Path.Combine(AppDataDir, "ffmpeg.exe"));
+        public static FileInfo FFProbe { get; set; } = new(Path.Combine(AppDataDir, "ffprobe.exe"));
 
         static readonly List<string> FFArgsList = [];
         static string FFArgs => String.Join(" ", FFArgsList);
@@ -16,6 +19,12 @@ namespace VideoStuff {
         static bool Errored = false;
 
         static void Main(string[] args) {
+            Directory.CreateDirectory(AppDataDir);
+            if (!FFMpeg.Exists || !FFProbe.Exists) {
+                DownloadFFMpeg().Wait();
+                File.Delete(Path.Combine(AppDataDir, "ffmpeg.zip"));
+            }
+
             string inFilePath = String.Empty;
             if (args.Length > 0)
                 inFilePath = args[0];
@@ -25,19 +34,7 @@ namespace VideoStuff {
             Console.Clear();
 
             if (!File.Exists(inFilePath)) {
-                Console.WriteLine("Invalid File");
-                Console.Write("Press Enter to Exit...");
-                Console.ReadLine();
-                return;
-            }
-            else if (!FFMpeg.Exists) {
-                Console.WriteLine("Unable to Locate FFMpeg");
-                Console.Write("Press Enter to Exit...");
-                Console.ReadLine();
-                return;
-            }
-            else if (!FFProbe.Exists) {
-                Console.WriteLine("Unable to Locate FFProbe");
+                Console.WriteLine("File does not exist");
                 Console.Write("Press Enter to Exit...");
                 Console.ReadLine();
                 return;
@@ -195,6 +192,22 @@ namespace VideoStuff {
             probe.Start();
             string output = probe.StandardOutput.ReadToEnd();
             InVideo = new(JsonDocument.Parse(output).RootElement);
+        }
+
+        private static async Task DownloadFFMpeg() {
+            string zipPath = Path.Combine(AppDataDir, "ffmpeg.zip");
+
+            WebClient client = new();
+            client.DownloadProgressChanged += (s, e) => Console.Write($"Downloading FFMpeg {e.ProgressPercentage}% \r");
+
+            await client.DownloadFileTaskAsync("https://github.com/GyanD/codexffmpeg/releases/download/6.1.1/ffmpeg-6.1.1-essentials_build.zip", zipPath);
+
+            using ZipArchive archive = ZipFile.OpenRead(zipPath);
+            foreach (ZipArchiveEntry entry in archive.Entries.Where(e => e.FullName.Contains("ffmpeg.exe") || e.FullName.Contains("ffprobe.exe")))
+                entry.ExtractToFile(Path.Combine(AppDataDir, entry.Name), true);
+
+            await Task.Delay(1000);
+            Console.Clear();
         }
 
         public static ConsoleKey PromptUserKey(string message) {
