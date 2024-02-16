@@ -73,7 +73,7 @@ namespace VideoStuff {
                     return f.Contains(Path.GetFileNameWithoutExtension(inFilePath).Replace(startFrame, "")) && fNum > startFrameNumber;
                 }).Count();
 
-                Console.WriteLine($"Start Frame: {startFrameNumber} | Frame Count: {frameCount}");
+                Console.WriteLine($"Frames: {startFrameNumber}-{startFrameNumber + frameCount} | Frame Count: {frameCount}");
 
                 WriteSeparator();
 
@@ -91,7 +91,9 @@ namespace VideoStuff {
 
                 FFArgsList.Add($"-r {fps} -vf fps={fps}");
 
-                InVideo = new(inFilePath, int.Parse(fps), frameCount);
+                InVideo = new(inFilePath, int.Parse(fps), frameCount) {
+                    Suffix = ".sequence"
+                };
 
                 Console.WriteLine($"ffmpeg {FFArgs}");
 
