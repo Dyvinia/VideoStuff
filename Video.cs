@@ -1,4 +1,5 @@
-﻿using System.Globalization;
+﻿using System.Diagnostics;
+using System.Globalization;
 using System.Text.Json;
 
 namespace VideoStuff {
@@ -19,7 +20,17 @@ namespace VideoStuff {
 
         public int TotalFrames => (int)(Duration * FPS);
 
-        public Video(JsonElement rootElement) {
+        public Video(string path, FileInfo ffProbe) {
+            Process probe = new() {
+                StartInfo = new() {
+                    FileName = ffProbe.FullName,
+                    Arguments = $"-v quiet -print_format json -show_format -show_streams \"{path}\"",
+                    RedirectStandardOutput = true,
+                }
+            };
+            probe.Start();
+
+            JsonElement rootElement = JsonDocument.Parse(probe.StandardOutput.ReadToEnd()).RootElement;
             FullPath = rootElement.GetProperty("format").GetProperty("filename").GetString() ?? String.Empty;
 
             JsonElement? videoStream = null;

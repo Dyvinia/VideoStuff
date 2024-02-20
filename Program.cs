@@ -2,7 +2,6 @@
 using System.IO.Compression;
 using System.Net;
 using System.Reflection;
-using System.Text.Json;
 
 namespace VideoStuff {
     internal class Program {
@@ -39,7 +38,7 @@ namespace VideoStuff {
             Console.Clear();
 
             if (VideoExt.Any(e => e == Path.GetExtension(inFilePath))) {
-                RunProbe(inFilePath);
+                InVideo = new(inFilePath, FFProbe);
 
                 Console.WriteLine(InVideo.Name);
 
@@ -218,20 +217,6 @@ namespace VideoStuff {
                     Errored = true;
             }
             ffmpeg.WaitForExit();
-        }
-
-        public static void RunProbe(string path) {
-            Process probe = new() {
-                StartInfo = new() {
-                    FileName = FFProbe.FullName,
-                    Arguments = $"-v quiet -print_format json -show_format -show_streams \"{path}\"",
-                    RedirectStandardOutput = true,
-                }
-            };
-
-            probe.Start();
-            string output = probe.StandardOutput.ReadToEnd();
-            InVideo = new(JsonDocument.Parse(output).RootElement);
         }
 
         private static async Task DownloadFFMpeg() {
