@@ -94,8 +94,6 @@ namespace VideoStuff {
                     Suffix = ".sequence"
                 };
 
-                Console.WriteLine($"ffmpeg {FFArgs}");
-
                 RunFFMpeg();
             }
             else {
@@ -186,6 +184,9 @@ namespace VideoStuff {
 
         public static void RunFFMpeg() {
             FFArgsList.Add(InVideo.OutPathQuoted);
+
+            Console.WriteLine($"ffmpeg {FFArgs}");
+
             Process ffmpeg = new() { 
                 StartInfo = new() {
                     FileName = FFMpeg.FullName,
