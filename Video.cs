@@ -20,6 +20,12 @@ namespace VideoStuff {
 
         public int TotalFrames => (int)(Duration * FPS);
 
+
+        public string PixelFormat { get; set; }
+        public string ColorRange { get; set; }
+        public string ColorSpace { get; set; }
+
+
         public Video(string path, FileInfo ffProbe) {
             Process probe = new() {
                 StartInfo = new() {
@@ -29,7 +35,6 @@ namespace VideoStuff {
                 }
             };
             probe.Start();
-
             JsonElement rootElement = JsonDocument.Parse(probe.StandardOutput.ReadToEnd()).RootElement;
             FullPath = rootElement.GetProperty("format").GetProperty("filename").GetString() ?? String.Empty;
 
@@ -49,6 +54,10 @@ namespace VideoStuff {
                 Duration = ParseSeconds(durationElement.GetString()!.TrimEnd('0').TrimEnd('.'));
             else if (videoStream!.Value.GetProperty("tags").TryGetProperty("DURATION", out JsonElement durationTagElement))
                 Duration = ParseSeconds(durationTagElement.GetString()!.TrimEnd('0').TrimEnd('.'));
+
+            PixelFormat = videoStream!.Value.GetProperty("pix_fmt").GetString()!;
+            ColorRange = videoStream!.Value.GetProperty("color_range").GetString()!;
+            ColorSpace = videoStream!.Value.GetProperty("color_space").GetString()!;
         }
 
         public Video(string seqPath, int fps, int frameCount) {

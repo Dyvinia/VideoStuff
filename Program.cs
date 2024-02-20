@@ -57,8 +57,6 @@ namespace VideoStuff {
                 else
                     Convert();
 
-                Console.WriteLine($"ffmpeg {FFArgs}");
-
                 RunFFMpeg();
             }
             else if (ImageSeqExt.Any(e => e == Path.GetExtension(inFilePath))) {
@@ -172,13 +170,19 @@ namespace VideoStuff {
             }
 
             ConsoleKey maxSize = PromptUserKey("Prevent Filesize from Exceeding 50MB? (Y/H(alf)/N) [Y]: ");
-            if (maxSize != ConsoleKey.N) {
+            if (maxSize != ConsoleKey.N && maxSize != ConsoleKey.H) {
                 int totalRate = 400000000 / (int)Math.Ceiling(InVideo.Duration);
                 FFArgsList.Add($"-maxrate {totalRate} -bufsize {totalRate}");
             }
-            else if (maxSize != ConsoleKey.H) {
+            else if (maxSize == ConsoleKey.H) {
                 int totalRate = 200000000 / (int)Math.Ceiling(InVideo.Duration);
                 FFArgsList.Add($"-maxrate {totalRate} -bufsize {totalRate}");
+            }
+
+            ConsoleKey useFilters = PromptUserKey("Boost Vibrance/Contrast? [N]: ");
+            if (useFilters == ConsoleKey.Y) {
+                FFArgsList.Add($"-vf \"vibrance=intensity=0.15, eq=contrast=1.02, exposure=0.03\" -pix_fmt {InVideo.PixelFormat} -colorspace {InVideo.ColorSpace}");
+                InVideo.Suffix += $".vibrant";
             }
         }
 
