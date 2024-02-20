@@ -48,7 +48,7 @@ namespace VideoStuff {
 
         public static double ParseSeconds(string value) {
             if (value.Contains(':'))
-                return TimeSpan.ParseExact(value, [@"h\:m\:s\.FFFF", @"m\:s\.FFFF", @"m\:s"], CultureInfo.InvariantCulture).TotalSeconds;
+                return TimeSpan.ParseExact(value, [@"h\:m\:s\.FFFF", @"m\:s\.FFFF", @"h\:m\:s", @"m\:s"], CultureInfo.InvariantCulture).TotalSeconds;
             else return double.Parse(value);
         }
     }
