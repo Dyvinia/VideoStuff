@@ -179,6 +179,14 @@ namespace VideoStuff {
                 FFArgsList.Add($"-maxrate {totalRate} -bufsize {totalRate}");
             }
 
+            ConsoleKey qualityPreset = PromptUserKey("H.264 Quality Preset (Fast, Medium, Slow, Veryslow) [M]: ");
+            FFArgsList.Add(qualityPreset switch {
+                ConsoleKey.F => "-preset fast",
+                ConsoleKey.S => "-preset slow",
+                ConsoleKey.V => "-preset veryslow",
+                _ => "-preset medium",
+            });
+
             ConsoleKey useFilters = PromptUserKey("Boost Vibrance/Contrast? [N]: ");
             if (useFilters == ConsoleKey.Y) {
                 FFArgsList.Add($"-vf \"vibrance=intensity=0.15, eq=contrast=1.02, exposure=0.03\" -pix_fmt {InVideo.PixelFormat} -colorspace {InVideo.ColorSpace}");
