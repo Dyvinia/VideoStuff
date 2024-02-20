@@ -21,9 +21,13 @@ namespace VideoStuff {
         public int TotalFrames => (int)(Duration * FPS);
 
 
-        public string PixelFormat { get; set; }
-        public string ColorRange { get; set; }
-        public string ColorSpace { get; set; }
+        public string? PixelFormat { get; set; }
+        public string? ColorRange { get; set; }
+        public string? ColorSpace { get; set; }
+
+        public int VideoTrackIndex { get; set; }
+
+        public List<AudioTrack> AudioTracks { get; set; } = [];
 
 
         public Video(string path, FileInfo ffProbe) {
@@ -40,13 +44,16 @@ namespace VideoStuff {
 
             JsonElement? videoStream = null;
             foreach (JsonElement stream in rootElement.GetProperty("streams").EnumerateArray()) {
-                if (stream.GetProperty("codec_type").GetString() == "video") {
+                if (stream.GetProperty("codec_type").GetString() == "video")
                     videoStream = stream;
-                }
+                if (stream.GetProperty("codec_type").GetString() == "audio")
+                    AudioTracks.Add(JsonSerializer.Deserialize<AudioTrack>(stream)!);
             }
 
             if (!videoStream.HasValue)
                 return;
+
+            VideoTrackIndex = videoStream!.Value.GetProperty("index").GetInt32();
 
             FPS = int.Parse(videoStream!.Value.GetProperty("r_frame_rate").GetString()!.Split('/').First());
 

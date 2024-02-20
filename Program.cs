@@ -47,6 +47,7 @@ namespace VideoStuff {
                 int durMicro = TimeSpan.FromSeconds(InVideo.Duration).Milliseconds;
 
                 Console.WriteLine($"Length: {(durMin > 0 ? $"{durMin}:{durSec}.{durMicro}" : InVideo.Duration.ToString("N3"))} | FPS: {InVideo.FPS}");
+                Console.WriteLine($"Audio Tracks: {InVideo.AudioTracks.Count}");
                 FFArgsList.Add($"-i \"{InVideo.FullPath}\"");
 
                 WriteSeparator();
@@ -130,6 +131,14 @@ namespace VideoStuff {
         public static void Convert() {
             FFArgsList.Add("-vcodec libx264 -acodec aac -ac 2");
             InVideo.Suffix = ".conv";
+
+            if (InVideo.AudioTracks.Count > 1) {
+                char audioTrack = PromptUserChar($"Select Audio Track ({InVideo.AudioTracks.First().Index} - {InVideo.AudioTracks.Last().Index}) [{InVideo.AudioTracks.First().Index}]: ");
+                int selectedIndex = int.Parse(audioTrack.ToString());
+                if (selectedIndex >= InVideo.AudioTracks.First().Index && selectedIndex <= InVideo.AudioTracks.Last().Index) {
+                    FFArgsList.Add($"-map 0:v:{InVideo.VideoTrackIndex} -map 0:a:{selectedIndex - 1}");
+                }
+            }
 
             ConsoleKey cut = PromptUserKey("Cut Video? (Y/N) [N]: ");
             if (cut == ConsoleKey.Y) {
@@ -246,6 +255,13 @@ namespace VideoStuff {
 
             await Task.Delay(1000);
             Console.Clear();
+        }
+
+        public static char PromptUserChar(string message) {
+            Console.Write(message);
+            char key = Console.ReadKey().KeyChar;
+            Console.WriteLine();
+            return key;
         }
 
         public static ConsoleKey PromptUserKey(string message) {
