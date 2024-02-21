@@ -285,7 +285,7 @@ namespace VideoStuff {
             string result = String.Empty;
 
             int i = 0;
-            do {
+            while (true) {
                 ConsoleKeyInfo key = Console.ReadKey(true);
 
                 if (key.Key == ConsoleKey.F5 && allowRestart)
@@ -310,8 +310,7 @@ namespace VideoStuff {
                     Console.Write(key.KeyChar);
                     i++;
                 }
-
-            } while (true);
+            }
         }
 
         public static void Restart() {
