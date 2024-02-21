@@ -196,7 +196,7 @@ namespace VideoStuff {
 
             ConsoleKey useFilters = PromptUserKey("Boost Vibrance/Contrast? [N]: ");
             if (useFilters == ConsoleKey.Y) {
-                FFArgsList.Add($"-vf \"vibrance=intensity=0.15, eq=contrast=1.04, exposure=0.036\" -pix_fmt {InVideo.PixelFormat} -colorspace {InVideo.ColorSpace}");
+                FFArgsList.Add($"-vf \"vibrance=intensity=0.15, eq=contrast=1.035, exposure=0.035\" -pix_fmt {InVideo.PixelFormat} -colorspace {InVideo.ColorSpace}");
                 InVideo.Suffix += $".vibrant";
             }
         }
