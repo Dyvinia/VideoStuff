@@ -134,10 +134,8 @@ namespace VideoStuff {
 
             if (InVideo.AudioTracks.Count > 1) {
                 char audioTrack = PromptUserChar($"Select Audio Track ({InVideo.AudioTracks.First().Index} - {InVideo.AudioTracks.Last().Index}) [{InVideo.AudioTracks.First().Index}]: ");
-                int selectedIndex = int.Parse(audioTrack.ToString());
-                if (selectedIndex >= InVideo.AudioTracks.First().Index && selectedIndex <= InVideo.AudioTracks.Last().Index) {
+                if (int.TryParse(audioTrack.ToString(), out int selectedIndex) && selectedIndex >= InVideo.AudioTracks.First().Index && selectedIndex <= InVideo.AudioTracks.Last().Index)
                     FFArgsList.Add($"-map 0:v:{InVideo.VideoTrackIndex} -map 0:a:{selectedIndex - 1}");
-                }
             }
 
             ConsoleKey cut = PromptUserKey("Cut Video? (Y/N) [N]: ");
