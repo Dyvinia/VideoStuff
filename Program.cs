@@ -33,7 +33,7 @@ namespace VideoStuff {
             if (args.Length > 0)
                 inFilePath = args[0];
             else
-                inFilePath = PromptUser("Input File: ").Trim('\"');
+                inFilePath = PromptUser("Input File: ", false).Trim('\"');
 
             Console.Clear();
 
@@ -259,21 +259,69 @@ namespace VideoStuff {
 
         public static char PromptUserChar(string message) {
             Console.Write(message);
-            char key = Console.ReadKey().KeyChar;
+            ConsoleKeyInfo key = Console.ReadKey();
             Console.WriteLine();
-            return key;
+
+            if (key.Key == ConsoleKey.F5)
+                Restart();
+
+            return key.KeyChar;
         }
 
         public static ConsoleKey PromptUserKey(string message) {
             Console.Write(message);
-            ConsoleKey key = Console.ReadKey().Key;
+            ConsoleKeyInfo key = Console.ReadKey();
             Console.WriteLine();
-            return key;
+
+            if (key.Key == ConsoleKey.F5)
+                Restart();
+
+            return key.Key;
         }
 
-        public static string PromptUser(string message) {
+        public static string PromptUser(string message, bool allowRestart = true) {
             Console.Write(message);
-            return Console.ReadLine() ?? String.Empty;
+
+            string result = String.Empty;
+
+            int i = 0;
+            do {
+                ConsoleKeyInfo key = Console.ReadKey(true);
+
+                if (key.Key == ConsoleKey.F5 && allowRestart)
+                    Restart();
+
+                if (key.Key == ConsoleKey.Enter) {
+                    Console.WriteLine();
+                    return result;
+                }
+
+                if (key.Key == ConsoleKey.Backspace) {
+                    if (i > 0) {
+                        result = result.Remove(result.Length - 1);
+                        Console.Write(key.KeyChar);
+                        Console.Write(' ');
+                        Console.Write(key.KeyChar);
+                        i--;
+                    }
+                }
+                else {
+                    result += key.KeyChar;
+                    Console.Write(key.KeyChar);
+                    i++;
+                }
+
+            } while (true);
+        }
+
+        public static void Restart() {
+            new Process() {
+                StartInfo = new() {
+                    FileName = Environment.ProcessPath,
+                    Arguments = InVideo.FullPathQuoted
+                }
+            }.Start();
+            Environment.Exit(0);
         }
 
         public static void WriteSeparator() => Console.WriteLine("---------------------------------------------");
