@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Text.Json.Serialization;
-using System.Threading.Tasks;
+﻿using System.Text.Json.Serialization;
 
 namespace VideoStuff {
     public class AudioTrack {
@@ -12,6 +7,6 @@ namespace VideoStuff {
         public int Index { get; set; }
 
         [JsonPropertyName("codec_name")]
-        public string Codec { get; set; }
+        public string Codec { get; set; } = "unknown";
     }
 }
