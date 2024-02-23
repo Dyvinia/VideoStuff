@@ -210,7 +210,7 @@ namespace VideoStuff {
             ConsoleKey useFilters = PromptUserKey("Boost Vibrance/Contrast? [N]: ");
             if (useFilters == ConsoleKey.Y) {
                 SaveCurves();
-                FFArgsList.Add($"-vf \"vibrance=intensity=0.169, curves=psfile=curves.acv\" -pix_fmt {InVideo.PixelFormat} -colorspace {InVideo.ColorSpace}");
+                FFArgsList.Add($"-vf \"vibrance=intensity=0.15, curves=psfile=curves.acv\" -pix_fmt {InVideo.PixelFormat} -colorspace {InVideo.ColorSpace}");
                 InVideo.Suffix += $".vibrant";
             }
         }
