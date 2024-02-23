@@ -196,7 +196,7 @@ namespace VideoStuff {
             }
 
             if (UseHardwareAccel)
-                FFArgsList.Add("-rc vbr -cq 29 -preset p7 -tune hq -multipass fullres -profile high");
+                FFArgsList.Add("-rc vbr -cq 29 -preset p7 -tune hq -multipass fullres -profile:v high");
             else {
                 ConsoleKey qualityPreset = PromptUserKey("x264 Quality Preset (Fast, Medium, Slow, Veryslow) [M]: ");
                 FFArgsList.Add(qualityPreset switch {
@@ -209,7 +209,8 @@ namespace VideoStuff {
 
             ConsoleKey useFilters = PromptUserKey("Boost Vibrance/Contrast? [N]: ");
             if (useFilters == ConsoleKey.Y) {
-                FFArgsList.Add($"-vf \"vibrance=intensity=0.15, eq=contrast=1.035, exposure=0.035\" -pix_fmt {InVideo.PixelFormat} -colorspace {InVideo.ColorSpace}");
+                SaveCurves();
+                FFArgsList.Add($"-vf \"vibrance=intensity=0.169, curves=psfile=curves.acv\" -pix_fmt {InVideo.PixelFormat} -colorspace {InVideo.ColorSpace}");
                 InVideo.Suffix += $".vibrant";
             }
         }
@@ -224,6 +225,7 @@ namespace VideoStuff {
                     FileName = FFMpeg.FullName,
                     Arguments = FFArgs,
                     RedirectStandardError = true,
+                    WorkingDirectory = FFMpeg.DirectoryName
                 }
             };
             ffmpeg.Start();
@@ -266,6 +268,18 @@ namespace VideoStuff {
 
             await Task.Delay(1000);
             Console.Clear();
+        }
+
+        private static void SaveCurves() {
+            string curvesFile = Path.Combine(AppDataDir, "curves.acv");
+
+            if (!File.Exists(curvesFile)) {
+                using Stream s = Assembly.GetExecutingAssembly().GetManifestResourceStream("VideoStuff.curves.acv")!;
+                using FileStream f = File.OpenWrite(curvesFile);
+                s.CopyTo(f);
+                s.Close();
+                f.Close();
+            }
         }
 
         public static char PromptUserChar(string message) {

@@ -12,4 +12,12 @@
     <Company>Dyvinia</Company>
   </PropertyGroup>
 
+  <ItemGroup>
+    <None Remove="curves.acv" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="curves.acv" />
+  </ItemGroup>
+
 </Project>
