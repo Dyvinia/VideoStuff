@@ -119,15 +119,18 @@ namespace VideoStuff {
         }
 
         public static void Remux() {
-            ConsoleKey map = PromptUserKey("Map All Audio Tracks (Y/N) [N]: ");
+            FFArgsList.Add("-c copy");
+
+            if (InVideo.AudioTracks.Count > 1) {
+                char map = PromptUserChar($"Select Audio Track ({InVideo.AudioTracks.First().Index} - {InVideo.AudioTracks.Last().Index}) or Map All (A) [1]: ");
+
+                if (map == 'a')
+                    FFArgsList.Add("-map 0");
+                if (int.TryParse(map.ToString(), out int selectedIndex) && selectedIndex >= InVideo.AudioTracks.First().Index && selectedIndex <= InVideo.AudioTracks.Last().Index)
+                    FFArgsList.Add($"-map 0:v:{InVideo.VideoTrackIndex} -map 0:a:{selectedIndex - 1}");
+            }
 
             InVideo.Suffix = ".remux";
-
-            FFArgsList.Add("-c copy");
-            if (map == ConsoleKey.Y) {
-                FFArgsList.Add("-map 0");
-                InVideo.Suffix += "Mapped";
-            }
         }
 
         public static void Convert() {
@@ -272,7 +275,7 @@ namespace VideoStuff {
 
             Hotkeys(key.Key);
 
-            return key.KeyChar;
+            return char.ToLower(key.KeyChar);
         }
 
         public static ConsoleKey PromptUserKey(string message) {
