@@ -196,7 +196,7 @@ namespace VideoStuff {
             }
 
             if (UseHardwareAccel)
-                FFArgsList.Add("-rc vbr -cq 29 -preset p7 -tune hq -multipass fullres -profile:v high");
+                FFArgsList.Add("-rc vbr -cq 28 -preset p7 -tune hq -multipass fullres -profile:v high");
             else {
                 ConsoleKey qualityPreset = PromptUserKey("x264 Quality Preset (Fast, Medium, Slow, Veryslow) [M]: ");
                 FFArgsList.Add(qualityPreset switch {
