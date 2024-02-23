@@ -20,6 +20,8 @@ namespace VideoStuff {
 
         static bool Errored = false;
 
+        static bool UseHardwareAccel = true;
+
         static void Main(string[] args) {
             AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
 
@@ -129,7 +131,11 @@ namespace VideoStuff {
         }
 
         public static void Convert() {
-            FFArgsList.Add("-vcodec libx264 -acodec aac -ac 2");
+            if (UseHardwareAccel)
+                FFArgsList.Add("-vcodec h264_nvenc -acodec aac -ac 2");
+            else
+                FFArgsList.Add("-vcodec libx264 -acodec aac -ac 2");
+
             InVideo.Suffix = ".conv";
 
             if (InVideo.AudioTracks.Count > 1) {
@@ -186,13 +192,17 @@ namespace VideoStuff {
                 FFArgsList.Add($"-maxrate {totalRate} -bufsize {totalRate}");
             }
 
-            ConsoleKey qualityPreset = PromptUserKey("H.264 Quality Preset (Fast, Medium, Slow, Veryslow) [M]: ");
-            FFArgsList.Add(qualityPreset switch {
-                ConsoleKey.F => "-preset fast",
-                ConsoleKey.S => "-preset slow",
-                ConsoleKey.V => "-preset veryslow",
-                _ => "-preset medium",
-            });
+            if (UseHardwareAccel)
+                FFArgsList.Add("-rc vbr -cq 29 -preset p7 -tune hq -multipass fullres -profile high");
+            else {
+                ConsoleKey qualityPreset = PromptUserKey("x264 Quality Preset (Fast, Medium, Slow, Veryslow) [M]: ");
+                FFArgsList.Add(qualityPreset switch {
+                    ConsoleKey.F => "-preset fast",
+                    ConsoleKey.S => "-preset slow",
+                    ConsoleKey.V => "-preset veryslow",
+                    _ => "-preset medium",
+                });
+            }
 
             ConsoleKey useFilters = PromptUserKey("Boost Vibrance/Contrast? [N]: ");
             if (useFilters == ConsoleKey.Y) {
