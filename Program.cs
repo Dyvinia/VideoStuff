@@ -270,8 +270,7 @@ namespace VideoStuff {
             ConsoleKeyInfo key = Console.ReadKey();
             Console.WriteLine();
 
-            if (key.Key == ConsoleKey.F5)
-                Restart();
+            Hotkeys(key.Key);
 
             return key.KeyChar;
         }
@@ -281,8 +280,7 @@ namespace VideoStuff {
             ConsoleKeyInfo key = Console.ReadKey();
             Console.WriteLine();
 
-            if (key.Key == ConsoleKey.F5)
-                Restart();
+            Hotkeys(key.Key);
 
             return key.Key;
         }
@@ -296,8 +294,7 @@ namespace VideoStuff {
             while (true) {
                 ConsoleKeyInfo key = Console.ReadKey(true);
 
-                if (key.Key == ConsoleKey.F5 && allowRestart)
-                    Restart();
+                Hotkeys(key.Key, allowRestart);
 
                 if (key.Key == ConsoleKey.Enter) {
                     Console.WriteLine();
@@ -319,6 +316,11 @@ namespace VideoStuff {
                     i++;
                 }
             }
+        }
+
+        public static void Hotkeys(ConsoleKey key, bool allowRestart = true) {
+            if (key == ConsoleKey.F5 && allowRestart)
+                Restart();
         }
 
         public static void Restart() {
