@@ -142,9 +142,16 @@ namespace VideoStuff {
             InVideo.Suffix = ".conv";
 
             if (InVideo.AudioTracks.Count > 1) {
-                char audioTrack = PromptUserChar($"Select Audio Track ({InVideo.AudioTracks.First().Index} - {InVideo.AudioTracks.Last().Index}) [{InVideo.AudioTracks.First().Index}]: ");
+                char audioTrack = PromptUserChar($"Select Audio Track ({InVideo.AudioTracks.First().Index} - {InVideo.AudioTracks.Last().Index}) or Mute (M) [{InVideo.AudioTracks.First().Index}]: ");
                 if (int.TryParse(audioTrack.ToString(), out int selectedIndex) && selectedIndex >= InVideo.AudioTracks.First().Index && selectedIndex <= InVideo.AudioTracks.Last().Index)
                     FFArgsList.Add($"-map 0:v:{InVideo.VideoTrackIndex} -map 0:a:{selectedIndex - 1}");
+                else if (audioTrack == 'm')
+                    FFArgsList.Add("-an");
+            }
+            else {
+                ConsoleKey mute = PromptUserKey("Mute Video? (Y/N) [N]: ");
+                if (mute == ConsoleKey.Y)
+                    FFArgsList.Add("-an");
             }
 
             ConsoleKey cut = PromptUserKey("Cut Video? (Y/N) [N]: ");
