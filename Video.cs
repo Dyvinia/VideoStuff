@@ -62,8 +62,9 @@ namespace VideoStuff {
             else if (videoStream!.Value.GetProperty("tags").TryGetProperty("DURATION", out JsonElement durationTagElement))
                 Duration = ParseSeconds(durationTagElement.GetString()!.TrimEnd('0').TrimEnd('.'));
 
-            PixelFormat = videoStream!.Value.GetProperty("pix_fmt").GetString()!;
-            
+            if (videoStream!.Value.TryGetProperty("pix_fmt", out JsonElement pixelFormat))
+                PixelFormat = pixelFormat.GetString()!;
+
             if (videoStream!.Value.TryGetProperty("color_space", out JsonElement colorSpace))
                 ColorSpace = colorSpace.GetString()!;
         }
