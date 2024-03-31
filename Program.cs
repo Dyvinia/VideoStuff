@@ -24,6 +24,8 @@ namespace VideoStuff {
 
         static bool UseHardwareAccel = true;
 
+        static bool PlaySoundOnCompletion = true;
+
         static void Main(string[] args) {
             AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
 
@@ -223,11 +225,17 @@ namespace VideoStuff {
             ConsoleKey useFilters = PromptUserKey("Boost Vibrance/Contrast? [N]: ");
             if (useFilters == ConsoleKey.Y) {
                 SaveCurves();
-                FFArgsList.Add($"-vf \"vibrance=intensity=0.15, curves=psfile=curves.acv\" -pix_fmt {InVideo.PixelFormat}");
+                FFArgsList.Add($"-vf \"vibrance=intensity=0.15, curves=psfile=curves.acv\"");
                 if (InVideo.ColorSpace is not null)
                     FFArgsList.Add($"-colorspace {InVideo.ColorSpace}");
+                if (InVideo.PixelFormat is not null)
+                    FFArgsList.Add($"-pix_fmt {InVideo.PixelFormat}");
                 InVideo.Suffix += $".vibrant";
             }
+
+            ConsoleKey playSound = PromptUserKey("Play Sound After Completion? [Y]: ");
+            if (playSound == ConsoleKey.N)
+                PlaySoundOnCompletion = false;
         }
 
         public static void RunFFMpeg() {
@@ -401,6 +409,7 @@ namespace VideoStuff {
         public static void Preview() {
             List<string> args = new(FFArgsList);
             args.RemoveAll(a => a.Contains("-vcodec"));
+            args.RemoveAll(a => a.Contains("-pix_fmt"));
 
             if (InVideo is null)
                 args.Add("-x 1280 -y 720 -r 30 -vf fps=30"); // img seq
@@ -432,6 +441,8 @@ namespace VideoStuff {
         public static void WriteSeparator() => Console.WriteLine("---------------------------------------------");
 
         public static void PlaySound() {
+            if (!PlaySoundOnCompletion) 
+                return;
             if (OperatingSystem.IsWindows())
                 new SoundPlayer(Assembly.GetExecutingAssembly().GetManifestResourceStream("VideoStuff.Resources.Sound.wav")).PlaySync();
             else
