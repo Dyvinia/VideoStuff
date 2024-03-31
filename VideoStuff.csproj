@@ -18,8 +18,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="curves.acv" />
-    <EmbeddedResource Include="Sound.wav" />
+    <EmbeddedResource Include="Resources\curves.acv" />
+    <EmbeddedResource Include="Resources\Sound.wav" />
   </ItemGroup>
 
   <ItemGroup>

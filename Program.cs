@@ -291,7 +291,7 @@ namespace VideoStuff {
             string curvesFile = Path.Combine(AppDataDir, "curves.acv");
 
             if (!File.Exists(curvesFile)) {
-                using Stream s = Assembly.GetExecutingAssembly().GetManifestResourceStream("VideoStuff.curves.acv")!;
+                using Stream s = Assembly.GetExecutingAssembly().GetManifestResourceStream("VideoStuff.Resources.curves.acv")!;
                 using FileStream f = File.OpenWrite(curvesFile);
                 s.CopyTo(f);
                 s.Close();
@@ -411,7 +411,7 @@ namespace VideoStuff {
 
         public static void PlaySound() {
             if (OperatingSystem.IsWindows())
-                new SoundPlayer(Assembly.GetExecutingAssembly().GetManifestResourceStream("VideoStuff.Sound.wav")).PlaySync();
+                new SoundPlayer(Assembly.GetExecutingAssembly().GetManifestResourceStream("VideoStuff.Resources.Sound.wav")).PlaySync();
             else
                 Console.Beep();
         }
