@@ -15,6 +15,21 @@ namespace VideoStuff {
         public string OutPath => Path.Combine(Path.GetDirectoryName(FullPath)!, Path.GetFileNameWithoutExtension(Name) + Suffix + ".mp4");
         public string OutPathQuoted => $"\"{OutPath}\"";
 
+        public int Width { get; set; }
+        public int Height { get; set; }
+
+        public double Aspect => (double)Width / Height;
+        public string AspectRatio {
+            get {
+                return Math.Round(Aspect, 2) switch {
+                    1.78 => "16:9",
+                    1.6 => "16:10",
+                    1.33 => "4:3",
+                    _ => $"{Aspect:#.00}:1"
+                };
+            }
+        }
+
         public int FPS { get; set; }
         public double Duration { get; set; }
 
@@ -57,6 +72,9 @@ namespace VideoStuff {
 
             FPS = int.Parse(videoStream!.Value.GetProperty("r_frame_rate").GetString()!.Split('/').First());
 
+            Width = videoStream!.Value.GetProperty("width").GetInt32();
+            Height = videoStream!.Value.GetProperty("height").GetInt32();
+
             if (videoStream!.Value.TryGetProperty("duration", out JsonElement durationElement))
                 Duration = ParseSeconds(durationElement.GetString()!.TrimEnd('0').TrimEnd('.'));
             else if (videoStream!.Value.GetProperty("tags").TryGetProperty("DURATION", out JsonElement durationTagElement))
@@ -72,7 +90,7 @@ namespace VideoStuff {
         public Video(string seqPath, int fps, int frameCount) {
             FullPath = seqPath;
             FPS = fps;
-            Duration = (double)frameCount/fps;
+            Duration = (double)frameCount / fps;
         }
 
         public static double ParseSeconds(string value) {

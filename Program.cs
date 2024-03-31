@@ -14,6 +14,7 @@ namespace VideoStuff {
 
         public static FileInfo FFMpeg { get; set; } = new(Path.Combine(AppDataDir, "ffmpeg.exe"));
         public static FileInfo FFProbe { get; set; } = new(Path.Combine(AppDataDir, "ffprobe.exe"));
+        public static FileInfo FFPlay { get; set; } = new(Path.Combine(AppDataDir, "ffplay.exe"));
 
         static readonly List<string> FFArgsList = [];
         static string FFArgs => String.Join(" ", FFArgsList);
@@ -26,7 +27,7 @@ namespace VideoStuff {
             AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
 
             Directory.CreateDirectory(AppDataDir);
-            if (!FFMpeg.Exists || !FFProbe.Exists) {
+            if (!FFMpeg.Exists || !FFProbe.Exists || !FFPlay.Exists) {
                 DownloadFFMpeg().Wait();
                 File.Delete(Path.Combine(AppDataDir, "ffmpeg.zip"));
             }
@@ -48,8 +49,8 @@ namespace VideoStuff {
                 int durSec = TimeSpan.FromSeconds(InVideo.Duration).Seconds;
                 int durMicro = TimeSpan.FromSeconds(InVideo.Duration).Milliseconds;
 
-                Console.WriteLine($"Length: {(durMin > 0 ? $"{durMin}:{durSec}.{durMicro}" : InVideo.Duration.ToString("N3"))} | FPS: {InVideo.FPS}");
-                Console.WriteLine($"Audio Tracks: {InVideo.AudioTracks.Count}");
+                Console.WriteLine($"Resolution: {InVideo.Width} x {InVideo.Height} ({InVideo.AspectRatio}) | FPS: {InVideo.FPS}");
+                Console.WriteLine($"Length: {(durMin > 0 ? $"{durMin}:{durSec}.{durMicro}" : InVideo.Duration.ToString("N3"))} | Audio Tracks: {InVideo.AudioTracks.Count}");
                 FFArgsList.Add($"-i \"{InVideo.FullPath}\"");
 
                 WriteSeparator();
@@ -61,10 +62,11 @@ namespace VideoStuff {
                     Convert();
 
                 RunFFMpeg();
+                Console.Beep();
             }
             else if (ImageSeqExt.Any(e => e == Path.GetExtension(inFilePath))) {
                 Console.WriteLine($"Image Sequence: {inFilePath}");
-                
+
                 string startFrame = string.Concat(Path.GetFileNameWithoutExtension(inFilePath).Where(char.IsDigit));
                 int startFrameNumber = int.Parse(startFrame);
 
@@ -157,7 +159,7 @@ namespace VideoStuff {
             ConsoleKey cut = PromptUserKey("Cut Video? (Y/N) [N]: ");
             if (cut == ConsoleKey.Y) {
                 string startTime = PromptUser("Start Time: ");
-                if (String.IsNullOrWhiteSpace(startTime)) 
+                if (String.IsNullOrWhiteSpace(startTime))
                     startTime = "0";
                 FFArgsList.Add($"-ss {startTime}");
 
@@ -165,8 +167,8 @@ namespace VideoStuff {
 
                 string? endTime = PromptUser("End Time: ");
                 if (!String.IsNullOrWhiteSpace(endTime)) {
-                    FFArgsList.Add($"-to {endTime}");
                     newDur = Video.ParseSeconds(endTime) - Video.ParseSeconds(startTime);
+                    FFArgsList.Add($"-t {newDur}");
                 }
                 InVideo.Duration = newDur;
 
@@ -229,7 +231,7 @@ namespace VideoStuff {
 
             Console.WriteLine($"ffmpeg {FFArgs}");
 
-            Process ffmpeg = new() { 
+            Process ffmpeg = new() {
                 StartInfo = new() {
                     FileName = FFMpeg.FullName,
                     Arguments = FFArgs,
@@ -257,7 +259,7 @@ namespace VideoStuff {
                     }
                     line = "";
                 }
-                if (line.Contains("error", StringComparison.CurrentCultureIgnoreCase)) 
+                if (line.Contains("error", StringComparison.CurrentCultureIgnoreCase))
                     Errored = true;
             }
             ffmpeg.WaitForExit();
@@ -271,11 +273,15 @@ namespace VideoStuff {
 
             await client.DownloadFileTaskAsync("https://github.com/GyanD/codexffmpeg/releases/download/6.1.1/ffmpeg-6.1.1-essentials_build.zip", zipPath);
 
+            Console.Clear();
+            Console.Write($"Extracting FFMpeg... \r");
+
+            string[] exes = ["ffmpeg.exe", "ffprobe.exe", "ffplay.exe"];
             using ZipArchive archive = ZipFile.OpenRead(zipPath);
-            foreach (ZipArchiveEntry entry in archive.Entries.Where(e => e.FullName.Contains("ffmpeg.exe") || e.FullName.Contains("ffprobe.exe")))
+            foreach (ZipArchiveEntry entry in archive.Entries.Where(e => exes.Any(e.FullName.Contains)))
                 entry.ExtractToFile(Path.Combine(AppDataDir, entry.Name), true);
 
-            await Task.Delay(1000);
+            await Task.Delay(100);
             Console.Clear();
         }
 
@@ -294,9 +300,13 @@ namespace VideoStuff {
         public static char PromptUserChar(string message) {
             Console.Write(message);
             ConsoleKeyInfo key = Console.ReadKey();
-            Console.WriteLine();
 
-            Hotkeys(key.Key);
+            bool isHotKey = Hotkey(key.Key);
+            while (isHotKey) {
+                key = Console.ReadKey();
+                isHotKey = Hotkey(key.Key);
+            }
+            Console.WriteLine();
 
             return char.ToLower(key.KeyChar);
         }
@@ -304,9 +314,13 @@ namespace VideoStuff {
         public static ConsoleKey PromptUserKey(string message) {
             Console.Write(message);
             ConsoleKeyInfo key = Console.ReadKey();
-            Console.WriteLine();
 
-            Hotkeys(key.Key);
+            bool isHotKey = Hotkey(key.Key);
+            while (isHotKey) {
+                key = Console.ReadKey();
+                isHotKey = Hotkey(key.Key);
+            }
+            Console.WriteLine();
 
             return key.Key;
         }
@@ -320,7 +334,11 @@ namespace VideoStuff {
             while (true) {
                 ConsoleKeyInfo key = Console.ReadKey(true);
 
-                Hotkeys(key.Key, allowRestart);
+                bool isHotKey = Hotkey(key.Key, allowRestart);
+                while (isHotKey) {
+                    key = Console.ReadKey(true);
+                    isHotKey = Hotkey(key.Key);
+                }
 
                 if (key.Key == ConsoleKey.Enter) {
                     Console.WriteLine();
@@ -344,9 +362,37 @@ namespace VideoStuff {
             }
         }
 
-        public static void Hotkeys(ConsoleKey key, bool allowRestart = true) {
-            if (key == ConsoleKey.F5 && allowRestart)
+        public static bool Hotkey(ConsoleKey key, bool allowRestart = true) {
+            if (key == ConsoleKey.F5 && allowRestart) {
                 Restart();
+                return true;
+            }
+            if (key == ConsoleKey.F1) {
+                Preview();
+                return true;
+            }
+            return false;
+        }
+
+        public static void Preview() {
+            List<string> args = new(FFArgsList);
+            args.RemoveAll(a => a.Contains("-vcodec"));
+
+            if (InVideo is null)
+                args.Add("-x 1280 -y 720 -r 30 -vf fps=30"); // img seq
+            else
+                args.Add($"-x {Math.Round(InVideo.Aspect * 720)} -y 720"); // video
+
+
+            Process ffplay = new() {
+                StartInfo = new() {
+                    FileName = FFPlay.FullName,
+                    Arguments = String.Join(" ", args),
+                    UseShellExecute = true,
+                    WorkingDirectory = FFMpeg.DirectoryName
+                }
+            };
+            ffplay.Start();
         }
 
         public static void Restart() {
