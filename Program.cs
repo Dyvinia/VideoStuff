@@ -51,11 +51,10 @@ namespace VideoStuff {
                 Console.WriteLine(InVideo.Name);
 
                 int durMin = (int)TimeSpan.FromSeconds(InVideo.Duration).TotalMinutes;
-                int durSec = TimeSpan.FromSeconds(InVideo.Duration).Seconds;
-                int durMicro = TimeSpan.FromSeconds(InVideo.Duration).Milliseconds;
+                double durSec = InVideo.Duration - (durMin * 60);
 
                 Console.WriteLine($"Resolution: {InVideo.Width} x {InVideo.Height} ({InVideo.AspectRatio}) | FPS: {InVideo.FPS}");
-                Console.WriteLine($"Length: {(durMin > 0 ? $"{durMin}:{durSec}.{durMicro}" : InVideo.Duration.ToString("N3"))} | Audio Tracks: {InVideo.AudioTracks.Count}");
+                Console.WriteLine($"Length: {(durMin > 0 ? $"{durMin}:{durSec:N2}" : InVideo.Duration.ToString("N2"))} | Audio Tracks: {InVideo.AudioTracks.Count}");
                 FFArgsList.Add($"-i \"{InVideo.FullPath}\"");
 
                 WriteSeparator();
