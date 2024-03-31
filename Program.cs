@@ -341,7 +341,7 @@ namespace VideoStuff {
                 bool isHotKey = Hotkey(key.Key, allowRestart);
                 while (isHotKey) {
                     key = Console.ReadKey(true);
-                    isHotKey = Hotkey(key.Key);
+                    isHotKey = Hotkey(key.Key, allowRestart);
                 }
 
                 if (key.Key == ConsoleKey.Enter) {
@@ -375,6 +375,26 @@ namespace VideoStuff {
                 Preview();
                 return true;
             }
+
+            // blacklist certain keys from being read by the user prompts
+            ConsoleKey[] nonInputKeys = [
+                ConsoleKey.VolumeUp,
+                ConsoleKey.VolumeDown,
+                ConsoleKey.VolumeMute,
+                ConsoleKey.UpArrow,
+                ConsoleKey.DownArrow,
+                ConsoleKey.LeftArrow,
+                ConsoleKey.RightArrow,
+                ConsoleKey.Home,
+                ConsoleKey.Insert,
+                ConsoleKey.PageUp,
+                ConsoleKey.PageDown,
+                ConsoleKey.End,
+                ConsoleKey.Delete,
+            ];
+            if (nonInputKeys.Contains(key))
+                return true;
+
             return false;
         }
 
