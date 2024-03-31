@@ -14,10 +14,16 @@
 
   <ItemGroup>
     <None Remove="curves.acv" />
+    <None Remove="Sound.wav" />
   </ItemGroup>
 
   <ItemGroup>
     <EmbeddedResource Include="curves.acv" />
+    <EmbeddedResource Include="Sound.wav" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Windows.Extensions" Version="8.0.0" />
   </ItemGroup>
 
 </Project>

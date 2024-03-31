@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using System.IO.Compression;
+using System.Media;
 using System.Net;
 using System.Reflection;
 
@@ -62,7 +63,8 @@ namespace VideoStuff {
                     Convert();
 
                 RunFFMpeg();
-                Console.Beep();
+
+                PlaySound();
             }
             else if (ImageSeqExt.Any(e => e == Path.GetExtension(inFilePath))) {
                 Console.WriteLine($"Image Sequence: {inFilePath}");
@@ -406,5 +408,12 @@ namespace VideoStuff {
         }
 
         public static void WriteSeparator() => Console.WriteLine("---------------------------------------------");
+
+        public static void PlaySound() {
+            if (OperatingSystem.IsWindows())
+                new SoundPlayer(Assembly.GetExecutingAssembly().GetManifestResourceStream("VideoStuff.Sound.wav")).PlaySync();
+            else
+                Console.Beep();
+        }
     }
 }
