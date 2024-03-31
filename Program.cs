@@ -27,6 +27,8 @@ namespace VideoStuff {
         static void Main(string[] args) {
             AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
 
+            Console.Title = $"VideoStuff v{Assembly.GetEntryAssembly()?.GetName().Version?.ToString()[..5]}";
+
             Directory.CreateDirectory(AppDataDir);
             if (!FFMpeg.Exists || !FFProbe.Exists || !FFPlay.Exists) {
                 DownloadFFMpeg().Wait();
