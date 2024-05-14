@@ -86,17 +86,19 @@ namespace VideoStuff {
 
                 string inSequence = Path.Combine(Path.GetDirectoryName(inFilePath)!, Path.GetFileNameWithoutExtension(inFilePath).Replace(startFrame, "") + $"%0{startFrame.Length}d" + Path.GetExtension(inFilePath));
 
+                string fps = PromptUser("Framerate [30]: ");
+                if (String.IsNullOrWhiteSpace(fps))
+                    fps = "30";
+
+                FFArgsList.Add($"-r {fps}");
+
                 FFArgsList.Add($"-start_number {startFrameNumber}");
 
                 FFArgsList.Add($"-i \"{inSequence}\"");
 
                 FFArgsList.Add($"-vcodec libx264 -pix_fmt yuv420p");
-
-                string fps = PromptUser("Framerate [30]: ");
-                if (String.IsNullOrWhiteSpace(fps))
-                    fps = "30";
-
-                FFArgsList.Add($"-r {fps} -vf fps={fps}");
+                
+                FFArgsList.Add($"-vf fps={fps}");
 
                 InVideo = new(inFilePath, int.Parse(fps), frameCount) {
                     Suffix = ".sequence"
