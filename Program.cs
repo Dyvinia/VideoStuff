@@ -10,6 +10,7 @@ namespace VideoStuff {
 
         public static readonly string[] VideoExt = [".mkv", ".mp4", ".webm", ".mov", ".avi", ".m4v"];
         public static readonly string[] ImageSeqExt = [".png", ".jpg", ".jpeg", ".bmp"];
+        public static readonly string[] AudioExt = [".mp3", ".wav", ".ogg", ".flac"];
 
         public static Video InVideo { get; set; }
 
@@ -105,6 +106,11 @@ namespace VideoStuff {
                 };
 
                 RunFFMpeg();
+            }
+            else if (AudioExt.Any(e => e == Path.GetExtension(inFilePath))) {
+                Console.WriteLine($"Audio: {inFilePath}");
+                FFArgsList.Add($"-i \"{inFilePath}\" -c:a libopus \"{Path.ChangeExtension(inFilePath, ".opus")}\"");
+                RunFFMpeg(false);
             }
             else {
                 Console.WriteLine("File is not valid format");
@@ -239,8 +245,9 @@ namespace VideoStuff {
                 PlaySoundOnCompletion = false;
         }
 
-        public static void RunFFMpeg() {
-            FFArgsList.Add(InVideo.OutPathQuoted);
+        public static void RunFFMpeg(bool addOutPath = true) {
+            if (addOutPath)
+                FFArgsList.Add(InVideo.OutPathQuoted);
 
             Console.WriteLine($"ffmpeg {FFArgs}");
 
