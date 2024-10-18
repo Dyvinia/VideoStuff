@@ -30,6 +30,8 @@ namespace VideoStuff {
         static void Main(string[] args) {
             AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
 
+            ConsoleExtension.Show();
+
             Console.Title = $"VideoStuff v{Assembly.GetEntryAssembly()?.GetName().Version?.ToString()[..5]}";
 
             Directory.CreateDirectory(AppDataDir);
@@ -60,15 +62,15 @@ namespace VideoStuff {
 
                 WriteSeparator();
 
-                ConsoleKey remuxOrConv = PromptUserKey("Remux (R) or Convert (C)? [C]: ");
-                if (remuxOrConv == ConsoleKey.R)
+                ConsoleKey videoProcess = PromptUserKey("Convert Video (C), Remux Video (R), or Convert to Audio (A)? [C]: ");
+                if (videoProcess == ConsoleKey.R)
                     Remux();
+                else if (videoProcess == ConsoleKey.A)
+                    ConvertToAudio();
                 else
                     Convert();
 
                 RunFFMpeg();
-
-                PlaySound();
             }
             else if (ImageSeqExt.Any(e => e == Path.GetExtension(inFilePath))) {
                 Console.WriteLine($"Image Sequence: {inFilePath}");
@@ -118,10 +120,16 @@ namespace VideoStuff {
                 Console.ReadLine();
             }
 
+            PlaySound();
+
             if (Errored) {
                 WriteSeparator();
                 Console.Write("Press Enter to Exit...");
                 Console.ReadLine();
+            }
+            else {
+                Thread.Sleep(1000);
+                ConsoleExtension.Minimize();
             }
         }
 
@@ -131,6 +139,22 @@ namespace VideoStuff {
             Console.Write("Press Enter to Exit...");
             Console.ReadLine();
             Environment.Exit(1);
+        }
+
+        public static void ConvertToAudio() {
+            ConsoleKey format = PromptUserKey("Wav (W), MP3 (M), Opus (O) [W]: ");
+            if (format == ConsoleKey.M) {
+                FFArgsList.Add("-vn -c:a libmp3lame");
+                InVideo.OutExtension = ".mp3";
+            }
+            else if (format == ConsoleKey.O) {
+                FFArgsList.Add("-vn -c:a libopus");
+                InVideo.OutExtension = ".opus";
+            }
+            else {
+                FFArgsList.Add("-vn -c:a pcm_u8");
+                InVideo.OutExtension = ".wav";
+            }
         }
 
         public static void Remux() {
@@ -154,8 +178,6 @@ namespace VideoStuff {
             else
                 FFArgsList.Add("-vcodec libx264 -acodec aac -ac 2");
 
-            InVideo.Suffix = ".conv";
-
             if (InVideo.AudioTracks.Count > 1) {
                 char audioTrack = PromptUserChar($"Select Audio Track ({InVideo.AudioTracks.First().Index} - {InVideo.AudioTracks.Last().Index}) or Mute (M) [{InVideo.AudioTracks.First().Index}]: ");
                 if (int.TryParse(audioTrack.ToString(), out int selectedIndex) && selectedIndex >= InVideo.AudioTracks.First().Index && selectedIndex <= InVideo.AudioTracks.Last().Index)
@@ -169,17 +191,19 @@ namespace VideoStuff {
                     FFArgsList.Add("-an");
             }
 
+            List<string> videoFilters = [];
+
             ConsoleKey cut = PromptUserKey("Cut Video? (Y/N) [N]: ");
             if (cut == ConsoleKey.Y) {
                 string startTime = PromptUser("Start Time: ");
-                if (String.IsNullOrWhiteSpace(startTime))
+                if (string.IsNullOrWhiteSpace(startTime))
                     startTime = "0";
                 FFArgsList.Add($"-ss {startTime}");
 
                 double newDur = InVideo.Duration - Video.ParseSeconds(startTime);
 
                 string? endTime = PromptUser("End Time: ");
-                if (!String.IsNullOrWhiteSpace(endTime)) {
+                if (!string.IsNullOrWhiteSpace(endTime)) {
                     newDur = Video.ParseSeconds(endTime) - Video.ParseSeconds(startTime);
                     FFArgsList.Add($"-t {newDur}");
                 }
@@ -191,20 +215,30 @@ namespace VideoStuff {
                 ConsoleKey speed = PromptUserKey("Change Speed Of Video? (Y/N) [N]: ");
                 if (speed == ConsoleKey.Y) {
                     string mult = PromptUser("Speed: ");
-                    if (String.IsNullOrWhiteSpace(mult))
+                    if (string.IsNullOrWhiteSpace(mult))
                         mult = "1";
 
                     string fps = PromptUser("FPS [Speed*FPS]: ");
-                    if (String.IsNullOrWhiteSpace(fps))
-                        FFArgsList.Add($"-vf \"setpts=PTS/{mult},fps=source_fps*{mult}\" -af \"atempo={mult}\"");
+                    if (string.IsNullOrWhiteSpace(fps)) {
+                        videoFilters.Add($"setpts=PTS/{mult},fps=source_fps*{mult}");
+                        InVideo.Duration /= double.Parse(mult);
+                        InVideo.FPS = (int)(InVideo.FPS * double.Parse(mult));
+                    }
                     else {
-                        FFArgsList.Add($"-vf \"setpts=PTS/{mult},fps={fps}\" -af \"atempo={mult}\"");
-                        InVideo.Duration = InVideo.Duration / double.Parse(mult);
+                        videoFilters.Add($"setpts=PTS/{mult},fps={fps}");
+                        
+                        InVideo.Duration /= double.Parse(mult);
                         InVideo.FPS = int.Parse(fps);
                     }
-
+                    FFArgsList.Add($"-af \"atempo={mult}\"");
                     InVideo.Suffix = $".{mult}x";
                 }
+            }
+
+            ConsoleKey crop = PromptUserKey("Crop Video to Square? (Y/N) [N]: ");
+            if (crop == ConsoleKey.Y) {
+                videoFilters.Add($"crop={InVideo.Height}:{InVideo.Height}");
+                InVideo.Suffix += $".crop";
             }
 
             ConsoleKey maxSize = PromptUserKey("Prevent Filesize from Exceeding 50MB? (Y/H(alf)/N) [Y]: ");
@@ -232,7 +266,7 @@ namespace VideoStuff {
             ConsoleKey useFilters = PromptUserKey("Boost Vibrance/Contrast? [N]: ");
             if (useFilters == ConsoleKey.Y) {
                 SaveCurves();
-                FFArgsList.Add($"-vf \"vibrance=intensity=0.15, curves=psfile=curves.acv\"");
+                videoFilters.Add($"vibrance=intensity=0.15, curves=psfile=curves.acv");
                 if (InVideo.ColorSpace is not null)
                     FFArgsList.Add($"-colorspace {InVideo.ColorSpace}");
                 if (InVideo.PixelFormat is not null)
@@ -240,9 +274,11 @@ namespace VideoStuff {
                 InVideo.Suffix += $".vibrant";
             }
 
-            ConsoleKey playSound = PromptUserKey("Play Sound After Completion? [Y]: ");
-            if (playSound == ConsoleKey.N)
-                PlaySoundOnCompletion = false;
+            if (videoFilters.Count > 0)
+                FFArgsList.Add($"-vf \"{string.Join(',', videoFilters)}\"");
+
+            if (string.IsNullOrEmpty(InVideo.Suffix))
+                InVideo.Suffix = ".conv";
         }
 
         public static void RunFFMpeg(bool addOutPath = true) {
@@ -378,6 +414,7 @@ namespace VideoStuff {
                     result += key.KeyChar;
                     Console.Write(key.KeyChar);
                     i++;
+                    ConsoleExtension.Focus();
                 }
             }
         }
@@ -451,10 +488,13 @@ namespace VideoStuff {
         public static void PlaySound() {
             if (!PlaySoundOnCompletion) 
                 return;
-            if (OperatingSystem.IsWindows())
-                new SoundPlayer(Assembly.GetExecutingAssembly().GetManifestResourceStream("VideoStuff.Resources.Sound.wav")).PlaySync();
-            else
-                Console.Beep();
+
+            Task.Run(() => {
+                if (OperatingSystem.IsWindows())
+                    new SoundPlayer(Assembly.GetExecutingAssembly().GetManifestResourceStream("VideoStuff.Resources.Sound.wav")).Play();
+                else
+                    Console.Beep();
+            });
         }
     }
 }

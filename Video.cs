@@ -10,9 +10,11 @@ namespace VideoStuff {
         public string Name => Path.GetFileName(FullPath);
         public string Extension => Path.GetExtension(FullPath);
 
-        public string? Suffix { get; set; } = String.Empty;
+        public string Suffix { get; set; } = string.Empty;
 
-        public string OutPath => Path.Combine(Path.GetDirectoryName(FullPath)!, Path.GetFileNameWithoutExtension(Name) + Suffix + ".mp4");
+        public string OutExtension { get; set; } = ".mp4";
+
+        public string OutPath => Path.Combine(Path.GetDirectoryName(FullPath)!, Path.GetFileNameWithoutExtension(Name) + Suffix + OutExtension);
         public string OutPathQuoted => $"\"{OutPath}\"";
 
         public int Width { get; set; }
