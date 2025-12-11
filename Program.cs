@@ -339,7 +339,7 @@ namespace VideoStuff {
             WebClient client = new();
             client.DownloadProgressChanged += (s, e) => Console.Write($"Downloading FFMpeg {e.ProgressPercentage}% \r");
 
-            await client.DownloadFileTaskAsync("https://github.com/GyanD/codexffmpeg/releases/download/6.1.1/ffmpeg-6.1.1-essentials_build.zip", zipPath);
+            await client.DownloadFileTaskAsync("https://github.com/GyanD/codexffmpeg/releases/download/8.0.1/ffmpeg-8.0.1-essentials_build.zip", zipPath);
 
             Console.Clear();
             Console.Write($"Extracting FFMpeg... \r");
@@ -438,6 +438,10 @@ namespace VideoStuff {
             }
             if (key == ConsoleKey.F1) {
                 Preview();
+                return true;
+            }
+            if (key == ConsoleKey.F12) {
+                Process.Start("explorer.exe", $"{AppDataDir}");
                 return true;
             }
 
