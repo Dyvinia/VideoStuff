@@ -40,7 +40,7 @@ namespace VideoStuff {
                 File.Delete(Path.Combine(AppDataDir, "ffmpeg.zip"));
             }
 
-            string inFilePath = String.Empty;
+            string inFilePath = string.Empty;
             if (args.Length > 0)
                 inFilePath = args[0];
             else
