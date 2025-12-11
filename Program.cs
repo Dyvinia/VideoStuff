@@ -12,20 +12,20 @@ namespace VideoStuff {
         public static readonly string[] ImageSeqExt = [".png", ".jpg", ".jpeg", ".bmp"];
         public static readonly string[] AudioExt = [".mp3", ".wav", ".ogg", ".flac"];
 
-        public static Video InVideo { get; set; }
+        public static Video? InVideo { get; set; }
 
         public static FileInfo FFMpeg { get; set; } = new(Path.Combine(AppDataDir, "ffmpeg.exe"));
         public static FileInfo FFProbe { get; set; } = new(Path.Combine(AppDataDir, "ffprobe.exe"));
         public static FileInfo FFPlay { get; set; } = new(Path.Combine(AppDataDir, "ffplay.exe"));
 
         static readonly List<string> FFArgsList = [];
-        static string FFArgs => String.Join(" ", FFArgsList);
+        static string FFArgs => string.Join(" ", FFArgsList);
 
         static bool Errored = false;
 
-        static bool UseHardwareAccel = true;
+        static readonly bool UseHardwareAccel = true;
 
-        static bool PlaySoundOnCompletion = true;
+        static readonly bool PlaySoundOnCompletion = true;
 
         static void Main(string[] args) {
             AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
@@ -62,7 +62,7 @@ namespace VideoStuff {
 
                 WriteSeparator();
 
-                ConsoleKey videoProcess = PromptUserKey("Convert Video (C), Remux Video (R), or Convert to Audio (A)? [C]: ");
+                ConsoleKey videoProcess = PromptUserKey("Convert Video [C], Remux Video [R], or Convert to Audio [A]? (C): ");
                 if (videoProcess == ConsoleKey.R)
                     Remux();
                 else if (videoProcess == ConsoleKey.A)
@@ -89,8 +89,8 @@ namespace VideoStuff {
 
                 string inSequence = Path.Combine(Path.GetDirectoryName(inFilePath)!, Path.GetFileNameWithoutExtension(inFilePath).Replace(startFrame, "") + $"%0{startFrame.Length}d" + Path.GetExtension(inFilePath));
 
-                string fps = PromptUser("Framerate [30]: ");
-                if (String.IsNullOrWhiteSpace(fps))
+                string fps = PromptUser("Framerate (30): ");
+                if (string.IsNullOrWhiteSpace(fps))
                     fps = "30";
 
                 FFArgsList.Add($"-r {fps}");
@@ -104,7 +104,7 @@ namespace VideoStuff {
                 FFArgsList.Add($"-vf fps={fps}");
 
                 InVideo = new(inFilePath, int.Parse(fps), frameCount) {
-                    Suffix = ".sequence"
+                    Suffix = ".seq"
                 };
 
                 RunFFMpeg();
@@ -142,26 +142,26 @@ namespace VideoStuff {
         }
 
         public static void ConvertToAudio() {
-            ConsoleKey format = PromptUserKey("Wav (W), MP3 (M), Opus (O) [W]: ");
+            ConsoleKey format = PromptUserKey("Wav [W], MP3 [M], Opus [O] (W): ");
             if (format == ConsoleKey.M) {
                 FFArgsList.Add("-vn -c:a libmp3lame");
-                InVideo.OutExtension = ".mp3";
+                InVideo!.OutExtension = ".mp3";
             }
             else if (format == ConsoleKey.O) {
                 FFArgsList.Add("-vn -c:a libopus");
-                InVideo.OutExtension = ".opus";
+                InVideo!.OutExtension = ".opus";
             }
             else {
                 FFArgsList.Add("-vn -c:a pcm_u8");
-                InVideo.OutExtension = ".wav";
+                InVideo!.OutExtension = ".wav";
             }
         }
 
         public static void Remux() {
             FFArgsList.Add("-c copy");
 
-            if (InVideo.AudioTracks.Count > 1) {
-                char map = PromptUserChar($"Select Audio Track ({InVideo.AudioTracks.First().Index} - {InVideo.AudioTracks.Last().Index}) or Map All (A) [1]: ");
+            if (InVideo!.AudioTracks.Count > 1) {
+                char map = PromptUserChar($"Select Audio Track [{InVideo.AudioTracks.First().Index} - {InVideo.AudioTracks.Last().Index}] or Map All [A] (1): ");
 
                 if (map == 'a')
                     FFArgsList.Add("-map 0");
@@ -178,22 +178,22 @@ namespace VideoStuff {
             else
                 FFArgsList.Add("-vcodec libx264 -acodec aac -ac 2");
 
-            if (InVideo.AudioTracks.Count > 1) {
-                char audioTrack = PromptUserChar($"Select Audio Track ({InVideo.AudioTracks.First().Index} - {InVideo.AudioTracks.Last().Index}) or Mute (M) [{InVideo.AudioTracks.First().Index}]: ");
+            if (InVideo!.AudioTracks.Count > 1) {
+                char audioTrack = PromptUserChar($"Select Audio Track [{InVideo.AudioTracks.First().Index} - {InVideo.AudioTracks.Last().Index}] or Mute [M] ({InVideo.AudioTracks.First().Index}): ");
                 if (int.TryParse(audioTrack.ToString(), out int selectedIndex) && selectedIndex >= InVideo.AudioTracks.First().Index && selectedIndex <= InVideo.AudioTracks.Last().Index)
                     FFArgsList.Add($"-map 0:v:{InVideo.VideoTrackIndex} -map 0:a:{selectedIndex - 1}");
                 else if (audioTrack == 'm')
                     FFArgsList.Add("-an");
             }
             else {
-                ConsoleKey mute = PromptUserKey("Mute Video? (Y/N) [N]: ");
+                ConsoleKey mute = PromptUserKey("Mute Video? [Y/N] (N): ");
                 if (mute == ConsoleKey.Y)
                     FFArgsList.Add("-an");
             }
 
             List<string> videoFilters = [];
 
-            ConsoleKey cut = PromptUserKey("Cut Video? (Y/N) [N]: ");
+            ConsoleKey cut = PromptUserKey("Cut Video? [Y/N] (N): ");
             if (cut == ConsoleKey.Y) {
                 string startTime = PromptUser("Start Time: ");
                 if (string.IsNullOrWhiteSpace(startTime))
@@ -212,7 +212,7 @@ namespace VideoStuff {
                 InVideo.Suffix = ".cut";
             }
             else {
-                ConsoleKey speed = PromptUserKey("Change Speed Of Video? (Y/N) [N]: ");
+                ConsoleKey speed = PromptUserKey("Change Speed Of Video? [Y/N] (N): ");
                 if (speed == ConsoleKey.Y) {
                     string mult = PromptUser("Speed: ");
                     if (string.IsNullOrWhiteSpace(mult))
@@ -235,26 +235,38 @@ namespace VideoStuff {
                 }
             }
 
-            ConsoleKey crop = PromptUserKey("Crop Video to Square? (Y/N) [N]: ");
-            if (crop == ConsoleKey.Y) {
+            ConsoleKey crop = PromptUserKey("Crop Video? [S(quare)/4(:3)/N] (N): ");
+            if (crop == ConsoleKey.S) {
                 videoFilters.Add($"crop={InVideo.Height}:{InVideo.Height}");
-                InVideo.Suffix += $".crop";
+                InVideo.Suffix += $".sqr";
+            }
+            else if (crop == ConsoleKey.D4) {
+                videoFilters.Add($"crop={InVideo.Height * 4 / 3}:{InVideo.Height}");
+                InVideo.Suffix += $".4x3";
             }
 
-            ConsoleKey maxSize = PromptUserKey("Prevent Filesize from Exceeding 50MB? (Y/H(alf)/N) [Y]: ");
-            if (maxSize != ConsoleKey.N && maxSize != ConsoleKey.H) {
-                int totalRate = 400000000 / (int)Math.Ceiling(InVideo.Duration);
+            ConsoleKey maxSize = PromptUserKey("Prevent Filesize from Exceeding 50MB? [Y/H(alf:25MB)/F(ifth:10MB)/8(MB)/N] (Y): ");
+            if (maxSize != ConsoleKey.N && maxSize != ConsoleKey.H && maxSize != ConsoleKey.F && maxSize != ConsoleKey.D8) {
+                int totalRate = 400000000 / InVideo.Duration.Ceiling();
                 FFArgsList.Add($"-maxrate {totalRate} -bufsize {totalRate}");
             }
             else if (maxSize == ConsoleKey.H) {
-                int totalRate = 200000000 / (int)Math.Ceiling(InVideo.Duration);
+                int totalRate = 200000000 / InVideo.Duration.Ceiling();
+                FFArgsList.Add($"-maxrate {totalRate} -bufsize {totalRate}");
+            }
+            else if (maxSize == ConsoleKey.F) {
+                int totalRate = 80000000 / InVideo.Duration.Ceiling();
+                FFArgsList.Add($"-maxrate {totalRate} -bufsize {totalRate}");
+            }
+            else if (maxSize == ConsoleKey.D8) {
+                int totalRate = 64000000 / InVideo.Duration.Ceiling();
                 FFArgsList.Add($"-maxrate {totalRate} -bufsize {totalRate}");
             }
 
             if (UseHardwareAccel)
                 FFArgsList.Add("-rc vbr -cq 28 -preset p7 -tune hq -multipass fullres -profile:v high");
             else {
-                ConsoleKey qualityPreset = PromptUserKey("x264 Quality Preset (Fast, Medium, Slow, Veryslow) [M]: ");
+                ConsoleKey qualityPreset = PromptUserKey("x264 Quality Preset [Fast, Medium, Slow, Veryslow] (M): ");
                 FFArgsList.Add(qualityPreset switch {
                     ConsoleKey.F => "-preset fast",
                     ConsoleKey.S => "-preset slow",
@@ -263,7 +275,7 @@ namespace VideoStuff {
                 });
             }
 
-            ConsoleKey useFilters = PromptUserKey("Boost Vibrance/Contrast? [N]: ");
+            ConsoleKey useFilters = PromptUserKey("Boost Vibrance/Contrast? [Y/N] (N): ");
             if (useFilters == ConsoleKey.Y) {
                 SaveCurves();
                 videoFilters.Add($"vibrance=intensity=0.15, curves=psfile=curves.acv");
@@ -283,7 +295,7 @@ namespace VideoStuff {
 
         public static void RunFFMpeg(bool addOutPath = true) {
             if (addOutPath)
-                FFArgsList.Add(InVideo.OutPathQuoted);
+                FFArgsList.Add(InVideo!.OutPathQuoted);
 
             Console.WriteLine($"ffmpeg {FFArgs}");
 
@@ -297,23 +309,23 @@ namespace VideoStuff {
             };
             ffmpeg.Start();
 
-            string line = "";
+            string line = string.Empty;
             while (!ffmpeg.StandardError.EndOfStream) {
                 char character = (char)ffmpeg.StandardError.Read();
                 line += character;
                 Console.Write(character);
                 if (character == '\n')
-                    line = "";
+                    line = string.Empty;
                 if (character == '\r') {
                     if (line.Contains("frame=")) {
                         string lineCutFront = line[(line.IndexOf('=') + 1)..];
                         string linefinal = lineCutFront[..lineCutFront.IndexOf('f')];
                         if (int.TryParse(linefinal, out int currentFrame)) {
-                            double percent = currentFrame * 100 / InVideo.TotalFrames;
+                            double percent = currentFrame * 100 / InVideo!.TotalFrames;
                             Console.Write($"\r{percent}% ");
                         }
                     }
-                    line = "";
+                    line = string.Empty;
                 }
                 if (line.Contains("error", StringComparison.CurrentCultureIgnoreCase))
                     Errored = true;
@@ -384,7 +396,7 @@ namespace VideoStuff {
         public static string PromptUser(string message, bool allowRestart = true) {
             Console.Write(message);
 
-            string result = String.Empty;
+            string result = string.Empty;
 
             int i = 0;
             while (true) {
@@ -403,7 +415,7 @@ namespace VideoStuff {
 
                 if (key.Key == ConsoleKey.Backspace) {
                     if (i > 0) {
-                        result = result.Remove(result.Length - 1);
+                        result = result[..^1];
                         Console.Write(key.KeyChar);
                         Console.Write(' ');
                         Console.Write(key.KeyChar);
@@ -452,7 +464,7 @@ namespace VideoStuff {
         }
 
         public static void Preview() {
-            List<string> args = new(FFArgsList);
+            List<string> args = [.. FFArgsList];
             args.RemoveAll(a => a.Contains("-vcodec"));
             args.RemoveAll(a => a.Contains("-pix_fmt"));
 
@@ -465,7 +477,7 @@ namespace VideoStuff {
             Process ffplay = new() {
                 StartInfo = new() {
                     FileName = FFPlay.FullName,
-                    Arguments = String.Join(" ", args),
+                    Arguments = string.Join(" ", args),
                     UseShellExecute = true,
                     WorkingDirectory = FFMpeg.DirectoryName
                 }
@@ -477,7 +489,7 @@ namespace VideoStuff {
             new Process() {
                 StartInfo = new() {
                     FileName = Environment.ProcessPath,
-                    Arguments = InVideo.FullPathQuoted
+                    Arguments = InVideo!.FullPathQuoted
                 }
             }.Start();
             Environment.Exit(0);
